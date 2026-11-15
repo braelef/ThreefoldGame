@@ -25,7 +25,7 @@ the 3D view from loading its images and video when `index.html` is opened straig
 Card names, colours, emblems, backgrounds and fire colours are set near the top of the script in `index.html`,
 in the `CARD_FACES` block. Timing, difficulty, fonts and the room's surfaces are set in the blocks around it.
 
-To add an emblem from a 3D model (needs Python with numpy and Pillow):
+To add an emblem from a 3D model (needs Python with numpy, Pillow and OpenCV):
 
 ```
 python3 tools/render_glb.py model.glb emblem.png front unlit
