@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Threefold</title>
+<style>
+/* Layout idea: a plain card table. Opponents across the top, shared middle cards, your hand at the bottom.
+   Deliberately neutral: the look is a placeholder until the real art direction arrives. */
+:root {
+  --bg: #f1f2f4;
+  --panel: #ffffff;
+  --ink: #1d2330;
+  --muted: #5f6878;
+  --line: #d3d7de;
+  --accent: #3f5bd9;
+  --back: #2b3350;
+  --font-body: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display: Georgia, "Times New Roman", serif;
+  --cw: clamp(36px, 8vw, 62px);
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #14171f; --panel: #1e222d; --ink: #e8eaf0; --muted: #9aa3b5;
+    --line: #353b4a; --accent: #8fa2ff; --back: #3a4468; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #14171f; --panel: #1e222d; --ink: #e8eaf0; --muted: #9aa3b5;
+  --line: #353b4a; --accent: #8fa2ff; --back: #3a4468; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.45; }
+main { max-width: 980px; margin: 0 auto; padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+header { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 12px; }
+h1 { font-family: var(--font-display); font-size: 1.5rem; margin: 0; text-wrap: balance; }
+h2 { font-size: .8rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 0; font-weight: 600; }
+.controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; }
+.controls label { display: flex; flex-direction: column; font-size: .75rem; color: var(--muted); gap: 2px; }
+select, .btn { font: inherit; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; }
+.btn { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; cursor: pointer; }
+:root[data-theme="dark"] .btn { color: #14171f; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .btn { color: #14171f; } }
+#status { margin: 0; padding: 10px 14px; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 6px; min-height: 2.9em; font-weight: 500; }
+#status.over { font-size: 1.1rem; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
+.panel.turn { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); }
+.panel-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 6px 12px; }
+.name { font-weight: 700; }
+.trios { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; font-size: .8rem; color: var(--muted); }
+.chip { color: #fff; font-weight: 700; border-radius: 4px; padding: 1px 7px; font-variant-numeric: tabular-nums; }
+#opps { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 10px; }
+#opps .cards { --cw: clamp(26px, 5.4vw, 40px); }
+.cards { display: flex; flex-wrap: wrap; gap: 5px; }
+.slot { display: flex; flex-direction: column; align-items: center; gap: 2px; width: var(--cw); }
+.card { width: var(--cw); aspect-ratio: 5 / 7; border-radius: calc(var(--cw) * .12); border: 1px solid rgba(0,0,0,.25); padding: 0; margin: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; font: inherit; position: relative;
+  background-size: cover; background-position: center; }
+.card.down { background: var(--back); background-image: repeating-linear-gradient(45deg, rgba(255,255,255,.07) 0 4px, transparent 4px 8px); }
+.card.face { color: #fff; }
+.card .num { font-family: var(--font-display); font-weight: 700; font-size: calc(var(--cw) * .5); line-height: 1; font-variant-numeric: tabular-nums; }
+.card .links { position: absolute; bottom: 3%; left: 0; right: 0; text-align: center; font-size: calc(var(--cw) * .2); opacity: .9; }
+.card.shown { outline: 3px solid var(--ink); outline-offset: 1px; }
+.card.gone { visibility: hidden; }
+button.card { cursor: pointer; box-shadow: 0 0 0 2px var(--accent); }
+button.card:hover { transform: translateY(-3px); }
+button:focus-visible, select:focus-visible, summary:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.tag { font-size: .65rem; color: var(--muted); height: 1em; line-height: 1; text-transform: uppercase; letter-spacing: .04em; }
+.hint { font-size: .78rem; color: var(--muted); margin: 0; }
+details { font-size: .9rem; color: var(--muted); max-width: 65ch; }
+details ul { padding-left: 1.2em; margin: 6px 0 0; }
+summary { cursor: pointer; color: var(--ink); font-weight: 600; }
+@media (prefers-reduced-motion: no-preference) { button.card { transition: transform .12s; } }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Threefold</h1>
+    <div class="controls">
+      <label for="opt-opps">Opponents
+        <select id="opt-opps"><option value="3">2</option><option value="4">3</option><option value="5">4</option><option value="6">5</option></select>
+      </label>
+      <label for="opt-mode">Mode
+        <select id="opt-mode"><option value="simple">Simple</option><option value="spicy">Spicy</option></select>
+      </label>
+      <label for="opt-level">Computer memory
+        <select id="opt-level"><option value="easy">Forgetful</option><option value="normal" selected>Average</option><option value="hard">Perfect</option></select>
+      </label>
+      <button class="btn" id="new-game" type="button">New game</button>
+    </div>
+  </header>
+
+  <p id="status" role="status" aria-live="polite"></p>
+
+  <section id="opps" aria-label="Opponents"></section>
+
+  <section class="panel" aria-labelledby="mid-h">
+    <h2 id="mid-h">Middle</h2>
+    <div class="cards" id="mid"></div>
+  </section>
+
+  <section class="panel" id="me" aria-label="Your hand"></section>
+
+  <details>
+    <summary>How to play</summary>
+    <ul>
+      <li>There are 36 cards: three copies of each number from 1 to 12. Every hand is sorted from lowest to highest.</li>
+      <li>On your turn, reveal cards one at a time. Each reveal is either any face-down middle card, or the lowest or highest hidden card in any hand, including your own.</li>
+      <li>If a card does not match the one before it, your turn ends and every revealed card goes back where it was.</li>
+      <li>Reveal three of the same number and you keep them as a trio. Your turn then ends.</li>
+      <li>Simple mode: win with any three trios. Spicy mode: win with two connected trios, whose numbers add up to 7 or differ by 7 (the small numbers on each card).</li>
+      <li>The trio of 7s wins at once in either mode.</li>
+    </ul>
+  </details>
+</main>
+
+<script>
+/* ---------- Card faces: edit this block to re-theme the deck ----------
+   label: what is printed on the card. name: optional caption (a chakra name, for example).
+   color: background colour. image: optional data: URI used as the card art. */
+const CARD_FACES = {};
+for (let n = 1; n <= 12; n++) {
+  CARD_FACES[n] = { label: String(n), name: '', color: `hsl(${(n - 1) * 30} 52% 40%)`, image: null };
+}
+const CARD_BACK_IMAGE = null; // optional data: URI for the card back
+
+/*ENGINE-START*/
+const DEAL = { 3: [9, 9], 4: [7, 8], 5: [6, 6], 6: [5, 6] }; // players: [cards each, cards in the middle]
+const NAMES = ['You', 'Mira', 'Tobin', 'Sol', 'Wren', 'Kai'];
+const MEMORY = { easy: 0.5, normal: 0.8, hard: 1 }; // chance a computer player remembers a card it sees
+
+const connected = n => [7 - n, n - 7, n + 7].filter(x => x >= 1 && x <= 12);
+
+function wins(trios, mode) {
+  if (trios.includes(7)) return true;
+  if (mode === 'simple') return trios.length >= 3;
+  return trios.some(a => connected(a).some(b => trios.includes(b)));
+}
+
+function newGame(nPlayers, mode, level, rng) {
+  const deck = [];
+  for (let n = 1; n <= 12; n++) for (let k = 0; k < 3; k++) deck.push({ id: (n - 1) * 3 + k, n, up: false });
+  for (let i = deck.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [deck[i], deck[j]] = [deck[j], deck[i]];
+  }
+  const per = DEAL[nPlayers][0];
+  const players = NAMES.slice(0, nPlayers).map((name, i) => ({
+    name, human: i === 0, trios: [], mem: [],
+    hand: deck.splice(0, per).sort((a, b) => a.n - b.n)
+  }));
+  return { mode, level, players, middle: deck, current: 0, revealed: [], pending: null, winner: null, msg: '' };
+}
+
+function allCards(s) {
+  return s.middle.filter(Boolean).concat(...s.players.map(p => p.hand));
+}
+const cardById = (s, id) => allCards(s).find(c => c.id === id);
+
+// Every legal reveal right now.
+function options(s) {
+  const out = [];
+  s.middle.forEach((c, i) => { if (c && !c.up) out.push({ where: 'mid', slot: i, card: c }); });
+  s.players.forEach((pl, p) => {
+    const down = pl.hand.filter(c => !c.up);
+    if (!down.length) return;
+    out.push({ where: 'hand', p, end: 'low', card: down[0] });
+    if (down.length > 1) out.push({ where: 'hand', p, end: 'high', card: down[down.length - 1] });
+  });
+  return out;
+}
+
+// Turn one card face up. Sets s.pending to 'miss' or 'trio' when the turn is decided.
+function reveal(s, opt, rng) {
+  const c = opt.card;
+  c.up = true;
+  s.revealed.push(c.id);
+  s.players.forEach(pl => {
+    if (!pl.human && !pl.mem.includes(c.id) && rng() < MEMORY[s.level]) pl.mem.push(c.id);
+  });
+  const ns = s.revealed.map(id => cardById(s, id).n);
+  if (ns.some(n => n !== ns[0])) s.pending = 'miss';
+  else if (ns.length === 3) s.pending = 'trio';
+  return s.pending;
+}
+
+// Finish a decided turn: award the trio or flip everything back, then pass the turn.
+function resolve(s) {
+  const ids = s.revealed;
+  if (s.pending === 'trio') {
+    const n = cardById(s, ids[0]).n;
+    s.middle = s.middle.map(c => (c && ids.includes(c.id) ? null : c));
+    s.players.forEach(pl => { pl.hand = pl.hand.filter(c => !ids.includes(c.id)); });
+    const cur = s.players[s.current];
+    cur.trios.push(n);
+    if (wins(cur.trios, s.mode)) s.winner = s.current;
+  } else {
+    allCards(s).forEach(c => { c.up = false; });
+  }
+  s.revealed = [];
+  s.pending = null;
+  if (s.winner === null) s.current = (s.current + 1) % s.players.length;
+}
+
+// Computer player: uses its own hand plus whatever it remembers seeing.
+function aiChoose(s, rng) {
+  const pl = s.players[s.current];
+  const knows = c => pl.hand.includes(c) || pl.mem.includes(c.id);
+  const opts = options(s);
+  const known = opts.filter(o => knows(o.card));
+  const unknown = opts.filter(o => !knows(o.card));
+  const pick = a => a[Math.floor(rng() * a.length)];
+  // Guess where an unseen copy of v might be: low numbers sit at the low end of hands, high at the high end.
+  const gamble = v => {
+    let best = null, top = -1;
+    for (const o of unknown) {
+      const base = o.where === 'mid' ? 0.4 : o.end === 'low' ? 1 - (v - 1) / 5 : 1 - (12 - v) / 5;
+      const score = base + rng() * 0.3;
+      if (score > top) { top = score; best = o; }
+    }
+    return best;
+  };
+
+  if (s.revealed.length) {
+    const v = cardById(s, s.revealed[0]).n;
+    const match = known.filter(o => o.card.n === v);
+    return pick(match) || gamble(v) || pick(opts);
+  }
+
+  // How many copies of each number this player knows it can reach in sequence.
+  const reach = {};
+  const add = n => { reach[n] = (reach[n] || 0) + 1; };
+  s.middle.forEach(c => { if (c && knows(c)) add(c.n); });
+  s.players.forEach(q => {
+    const h = q.hand;
+    let i = 0, j = h.length - 1;
+    if (h.length && knows(h[0])) { const n = h[0].n; while (i <= j && knows(h[i]) && h[i].n === n) { add(n); i++; } }
+    if (j >= i && knows(h[j])) { const n = h[j].n; while (j >= i && knows(h[j]) && h[j].n === n) { add(n); j--; } }
+  });
+  const ns = Object.keys(reach).map(Number);
+  const sure = ns.filter(n => reach[n] >= 3);
+  if (sure.length) {
+    const winning = sure.filter(n => wins(pl.trios.concat(n), s.mode));
+    const n = pick(winning.length ? winning : sure);
+    return pick(known.filter(o => o.card.n === n));
+  }
+  const pairs = ns.filter(n => reach[n] === 2);
+  const target = pairs.length ? pick(pairs)
+    : ns.length ? ns.reduce((a, b) => (Math.abs(b - 6.5) > Math.abs(a - 6.5) ? b : a))
+    : 1 + Math.floor(rng() * 12);
+  return gamble(target) || pick(known.filter(o => o.card.n === target)) || pick(opts);
+}
+/*ENGINE-END*/
+
+/* ---------- Interface ---------- */
+const $ = id => document.getElementById(id);
+let S = null, OPTS = [], timer = null;
+const PACE = { ai: 1100, resolve: 1600 };
+
+function describe(o) {
+  const me = S.players[S.current];
+  const who = me.human ? 'You' : me.name;
+  const n = o.card.n;
+  if (o.where === 'mid') return `${who} flipped a middle card: ${n}.`;
+  const end = o.end === 'low' ? 'lowest' : 'highest';
+  const owner = S.players[o.p];
+  if (o.p === S.current) return `${who} showed ${me.human ? 'your' : 'their'} own ${end} card: ${n}.`;
+  return `${who} asked ${owner.human ? 'you' : owner.name} for ${owner.human ? 'your' : 'their'} ${end} card: ${n}.`;
+}
+
+function play(o) {
+  let msg = describe(o);
+  const result = reveal(S, o, Math.random);
+  if (result === 'miss') msg += ' No match, so the cards go back.';
+  if (result === 'trio') msg += ` That makes a trio of ${o.card.n}s.`;
+  S.msg = msg;
+  tick();
+}
+
+function tick() {
+  clearTimeout(timer);
+  render();
+  if (S.winner !== null) return;
+  if (S.pending) {
+    timer = setTimeout(() => {
+      resolve(S);
+      if (S.winner === null) {
+        const next = S.players[S.current];
+        S.msg = next.human
+          ? 'Your turn. Pick a middle card, or the lowest or highest card of any hand.'
+          : `${next.name}'s turn.`;
+      }
+      tick();
+    }, PACE.resolve);
+    return;
+  }
+  if (!S.players[S.current].human) {
+    timer = setTimeout(() => play(aiChoose(S, Math.random)), PACE.ai);
+  }
+}
+
+function esc(t) { return String(t).replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch])); }
+
+function cardHTML(card, faceVisible, optIndex, tag) {
+  if (!card) return '<div class="slot"><div class="card gone"></div><span class="tag"></span></div>';
+  let cls = 'card', style = '', inner = '', label;
+  if (faceVisible) {
+    const f = CARD_FACES[card.n];
+    cls += ' face' + (card.up ? ' shown' : '');
+    style = `background-color:${f.color};` + (f.image ? `background-image:url(${f.image});` : '');
+    inner = `<span class="num">${esc(f.label)}</span>`;
+    if (S.mode === 'spicy' && connected(card.n).length) inner += `<span class="links">${connected(card.n).join(' · ')}</span>`;
+    label = `Card ${f.label}${f.name ? ', ' + f.name : ''}`;
+  } else {
+    cls += ' down';
+    if (CARD_BACK_IMAGE) style = `background-image:url(${CARD_BACK_IMAGE});`;
+    label = 'Face-down card';
+  }
+  const body = optIndex >= 0
+    ? `<button type="button" class="${cls}" style="${style}" data-opt="${optIndex}" aria-label="Reveal ${tag ? tag + ' card' : 'this card'}${faceVisible ? ' (' + label + ')' : ''}">${inner}</button>`
+    : `<div class="${cls}" style="${style}" role="img" aria-label="${label}">${inner}</div>`;
+  return `<div class="slot">${body}<span class="tag">${tag || ''}</span></div>`;
+}
+
+function triosHTML(pl) {
+  if (!pl.trios.length) return '<span class="trios">No trios yet</span>';
+  return '<span class="trios">Trios: ' + pl.trios.map(n =>
+    `<span class="chip" style="background:${CARD_FACES[n].color}">${esc(CARD_FACES[n].label)}</span>`).join('') + '</span>';
+}
+
+function handHTML(pl, p, canAct) {
+  return pl.hand.map(c => {
+    const i = canAct ? OPTS.findIndex(o => o.where === 'hand' && o.p === p && o.card === c) : -1;
+    const tag = i >= 0 ? (OPTS[i].end === 'low' ? 'low' : 'high') : '';
+    return cardHTML(c, pl.human || c.up, i, tag);
+  }).join('') || '<span class="hint">No cards left</span>';
+}
+
+function render() {
+  const over = S.winner !== null;
+  const canAct = !over && !S.pending && S.players[S.current].human;
+  OPTS = canAct ? options(S) : [];
+
+  const st = $('status');
+  st.className = over ? 'over' : '';
+  st.textContent = over
+    ? `${S.msg} ${S.winner === 0 ? 'You win!' : S.players[S.winner].name + ' wins.'} Press New game to play again.`
+    : S.msg;
+
+  $('opps').innerHTML = S.players.map((pl, p) => p === 0 ? '' : `
+    <div class="panel${S.current === p && !over ? ' turn' : ''}">
+      <div class="panel-head"><span class="name">${esc(pl.name)}</span>${triosHTML(pl)}</div>
+      <div class="cards">${handHTML(pl, p, canAct)}</div>
+    </div>`).join('');
+
+  $('mid').innerHTML = S.middle.map((c, slot) => {
+    const i = canAct && c ? OPTS.findIndex(o => o.where === 'mid' && o.slot === slot) : -1;
+    return cardHTML(c, c && c.up, i, '');
+  }).join('');
+
+  const me = S.players[0];
+  const meEl = $('me');
+  meEl.className = 'panel' + (S.current === 0 && !over ? ' turn' : '');
+  meEl.innerHTML = `
+    <div class="panel-head"><h2>Your hand</h2>${triosHTML(me)}</div>
+    <div class="cards">${handHTML(me, 0, canAct)}</div>
+    <p class="hint">Hands run lowest on the left to highest on the right. Outlined cards are the ones you can reveal.</p>`;
+}
+
+function startNew() {
+  S = newGame(+$('opt-opps').value, $('opt-mode').value, $('opt-level').value, Math.random);
+  S.msg = 'Your turn. Pick a middle card, or the lowest or highest card of any hand.';
+  tick();
+}
+
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-opt]');
+  if (b && OPTS[+b.dataset.opt]) play(OPTS[+b.dataset.opt]);
+});
+$('new-game').addEventListener('click', startNew);
+
+function start(data) {
+  if (data && data.state && data.state.players) {
+    S = data.state;
+    $('opt-opps').value = String(S.players.length);
+    $('opt-mode').value = S.mode;
+    $('opt-level').value = S.level;
+    tick();
+  } else {
+    startNew();
+  }
+}
+window.claude?.hot?.snapshot?.(() => ({ state: S }));
+if (window.claude?.hot?.ready) window.claude.hot.ready(start); else start(window.claude?.hot?.data ?? {});
+</script>
+</body>
+</html>

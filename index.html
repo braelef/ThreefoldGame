@@ -1,0 +1,1929 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Threefold</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Marcellus&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Philosopher:wght@400;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Forum&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@300;400;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Raleway:wght@300;400;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poiret+One&display=swap">
+<style>
+/* Layout idea: one screen. Controls and status on top, a 3D card table filling the rest.
+   Deliberately neutral: the look is a placeholder until the real art direction arrives. */
+:root {
+  --bg: #e9ebee;
+  --panel: #ffffff;
+  --ink: #1d2330;
+  --muted: #5f6878;
+  --line: #d3d7de;
+  --accent: #3f5bd9;
+  --font-body: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display: Georgia, "Times New Roman", serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #14171f; --panel: #1e222d; --ink: #e8eaf0; --muted: #9aa3b5;
+    --line: #353b4a; --accent: #8fa2ff; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #14171f; --panel: #1e222d; --ink: #e8eaf0; --muted: #9aa3b5;
+  --line: #353b4a; --accent: #8fa2ff; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.45; }
+main { height: 100%; max-width: 1280px; margin: 0 auto; padding: 12px 16px; display: flex; flex-direction: column; gap: 10px; }
+header { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 10px; }
+h1 { font-family: var(--font-display); font-size: 1.4rem; margin: 0; }
+.controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; }
+.controls label { display: flex; flex-direction: column; font-size: .75rem; color: var(--muted); gap: 2px; }
+select, .btn { font: inherit; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; }
+.btn { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; cursor: pointer; }
+.btn.quiet { background: var(--panel); border-color: var(--line); color: var(--ink); }
+:root[data-theme="dark"] .btn:not(.quiet) { color: #14171f; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .btn:not(.quiet) { color: #14171f; } }
+#status { margin: 0; padding: 8px 14px; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 6px; min-height: 2.6em; font-weight: 500; }
+#stage { position: relative; flex: 1 1 auto; min-height: 320px; border-radius: 10px; overflow: hidden; background: #1b1917; }
+#view { display: block; width: 100%; height: 100%; touch-action: manipulation; }
+/* Custom pointer over the table: a slim arrow that becomes a hand over cards. Only shown for a mouse. */
+#stage.fine #view { cursor: none; }
+#cursor { position: absolute; left: 0; top: 0; width: 0; height: 0; pointer-events: none; opacity: 0; z-index: 5; will-change: transform; --cursor-glow: #9fd4ff; }
+#cursor.on { opacity: 1; }
+#cursor svg { position: absolute; overflow: visible; filter: drop-shadow(0 1px 1.5px rgba(0,0,0,.6)); }
+#cursor .c-arrow { left: -3px; top: -3px; width: 26px; height: 26px; }
+#cursor .c-hand { left: -11px; top: -3px; width: 30px; height: 34px; opacity: 0; }
+#cursor.over .c-arrow { opacity: 0; }
+#cursor.over .c-hand { opacity: 1; }
+#cursor.glow svg { filter: drop-shadow(0 1px 1.5px rgba(0,0,0,.45)) drop-shadow(0 0 3px color-mix(in srgb, var(--cursor-glow) 70%, transparent)) drop-shadow(0 0 9px color-mix(in srgb, var(--cursor-glow) 55%, transparent)); }
+@media (prefers-reduced-motion: no-preference) { #cursor svg { transition: opacity .12s, filter .3s; } }
+#labels { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.seat, .endtag { position: absolute; left: 0; top: 0; white-space: nowrap; will-change: transform; }
+.seat { display: flex; gap: 6px; align-items: center; padding: 2px 9px; border-radius: 999px; font-size: .82rem; font-weight: 700;
+  background: rgba(16, 22, 30, .72); color: #fff; border: 2px solid transparent; }
+.seat.turn { border-color: #ffd76a; }
+.chip { color: #fff; font-weight: 700; border-radius: 4px; padding: 0 6px; font-variant-numeric: tabular-nums; border: 1px solid rgba(255,255,255,.5); }
+.endtag { font-size: .66rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; padding: 1px 6px; border-radius: 999px; background: rgba(16, 22, 30, .78); color: #fff; }
+#fail { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; padding: 24px; text-align: center; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; }
+/* Trio burst: when you complete a trio, its number sweeps across the table and lightning strikes behind it. */
+#burst { position: absolute; inset: 0; z-index: 4; pointer-events: none; overflow: hidden; display: none; --bolt: #8fd0ff; }
+#burst.go { display: block; }
+#burst canvas { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; }
+#burst .flash { position: absolute; inset: 0; opacity: 0; mix-blend-mode: screen;
+  background: radial-gradient(circle at 50% 45%, rgba(255,255,255,.95), var(--bolt) 30%, transparent 78%); }
+#burst .streak { position: absolute; left: -20%; right: -20%; top: 50%; height: 3px; opacity: 0; border-radius: 3px;
+  background: linear-gradient(90deg, transparent, var(--bolt) 25%, #fff 50%, var(--bolt) 75%, transparent); box-shadow: 0 0 18px var(--bolt); }
+#burst .streak.s2 { top: 58%; height: 2px; }
+#burst .streak.s3 { top: 41%; height: 2px; }
+.burst-num { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; opacity: 0;
+  font-family: "Cinzel", Georgia, serif; font-weight: 700; line-height: 1; color: #fff; will-change: transform, opacity, filter;
+  text-shadow: 0 0 .03em #fff, 0 0 .1em var(--bolt), 0 0 .28em var(--bolt), .035em .045em 0 rgba(0, 10, 40, .6); }
+#burst.go .burst-num { animation: burst-slide 1.75s cubic-bezier(.2, .75, .25, 1) both; }
+#burst.go .flash { animation: burst-flash 1s .33s ease-out both; }
+#burst.go .streak { animation: burst-streak .7s .05s ease-out both; }
+#burst.go .streak.s2 { animation-delay: .14s; }
+#burst.go .streak.s3 { animation-delay: .2s; }
+@keyframes burst-slide {
+  0%   { transform: translateX(-125%) skewX(-20deg) scale(.8); opacity: 0; filter: blur(16px); }
+  20%  { transform: translateX(-2%) skewX(-10deg) scale(1.1); opacity: 1; filter: blur(0); }
+  28%  { transform: translateX(0) skewX(-7deg) scale(1); opacity: 1; }
+  68%  { transform: translateX(3%) skewX(-7deg) scale(1.03); opacity: 1; filter: blur(0); }
+  100% { transform: translateX(135%) skewX(-24deg) scale(.9); opacity: 0; filter: blur(18px); }
+}
+@keyframes burst-flash { 0% { opacity: 0; } 5% { opacity: .8; } 13% { opacity: .15; } 20% { opacity: .65; } 32% { opacity: .1; } 40% { opacity: .4; } 100% { opacity: 0; } }
+@keyframes burst-streak { 0% { transform: translateX(-70%) scaleX(.4); opacity: 0; } 30% { opacity: 1; } 100% { transform: translateX(70%) scaleX(1.2); opacity: 0; } }
+@keyframes burst-fade { 0% { opacity: 0; } 20% { opacity: 1; } 75% { opacity: 1; } 100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  #burst.go .burst-num { animation: burst-fade 1.6s both; }
+  #burst.go .flash, #burst.go .streak { animation: none; }
+}
+/* Start menu: one dark, candle-lit look in either theme, laid over the dimmed table. */
+[hidden] { display: none !important; }
+#menu { position: absolute; inset: 0; z-index: 6; display: flex; align-items: center; justify-content: center; padding: 16px;
+  background: rgba(6, 9, 18, .62); -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px); overflow: auto;
+  font-family: "Josefin Sans", system-ui, sans-serif; color: var(--m-ink); }
+#stage { --m-ink: #fbf6e9; --m-soft: #cfc7b4; --m-gold: #e2c06c; --m-line: rgba(226, 192, 108, .45); }
+/* End of game: the table fades to dark, the result appears, then the choices. */
+#endgame { position: absolute; inset: 0; z-index: 5; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 26px;
+  padding: 16px; text-align: center; background: rgba(3, 5, 12, 0); font-family: "Josefin Sans", system-ui, sans-serif; color: var(--m-ink); }
+#endgame.show { display: flex; animation: end-dark 1.8s ease forwards; }
+#end-title { margin: 0; font-family: "Cinzel", Georgia, serif; font-weight: 700; font-size: clamp(2.4rem, 11vw, 6rem); line-height: 1.05; letter-spacing: .08em;
+  color: #fff; text-shadow: 0 0 .14em rgba(226, 192, 108, .95), 0 0 .5em rgba(226, 192, 108, .5); opacity: 0; text-wrap: balance; }
+#endgame.lost #end-title { color: #d9dfec; text-shadow: 0 0 .3em rgba(120, 140, 190, .6); font-size: clamp(2rem, 8vw, 4.2rem); }
+#end-actions { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; opacity: 0; visibility: hidden; }
+#end-actions .m-btn { min-width: 150px; }
+#endgame.show #end-title { animation: end-title 1.5s 1.3s cubic-bezier(.2, .8, .2, 1) forwards; }
+#endgame.show #end-actions { animation: end-actions .9s 3.1s ease forwards; }
+@keyframes end-dark { to { background: rgba(3, 5, 12, .86); } }
+@keyframes end-title { from { opacity: 0; transform: scale(.86); letter-spacing: .32em; filter: blur(8px); } to { opacity: 1; transform: none; letter-spacing: .08em; filter: none; } }
+@keyframes end-actions { from { opacity: 0; visibility: visible; transform: translateY(10px); } to { opacity: 1; visibility: visible; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  @keyframes end-title { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes end-actions { from { opacity: 0; visibility: visible; } to { opacity: 1; visibility: visible; } }
+}
+.menu-card { width: min(100%, 430px); margin: auto; padding: 28px 28px 24px; border-radius: 16px; border: 1px solid var(--m-line);
+  background: rgba(10, 13, 26, .9); box-shadow: 0 18px 50px rgba(0, 0, 0, .5); }
+.menu-card section, .menu-card form { display: flex; flex-direction: column; gap: 18px; }
+.menu-card h2 { margin: 0; font-family: "Cinzel", Georgia, serif; font-weight: 600; letter-spacing: .08em; text-align: center; text-wrap: balance; }
+#menu-title { font-size: clamp(2rem, 7vw, 2.9rem); color: var(--m-gold); }
+#setup-title { font-size: 1.35rem; }
+.menu-sub { margin: -8px 0 4px; text-align: center; color: var(--m-soft); }
+.menu-actions { display: flex; flex-direction: column; gap: 10px; }
+.m-btn { font: inherit; font-size: 1.05rem; font-weight: 600; letter-spacing: .04em; padding: 12px 16px 10px; border-radius: 10px; cursor: pointer;
+  border: 1px solid var(--m-line); background: transparent; color: var(--m-ink); }
+.m-btn:hover:not(:disabled) { border-color: var(--m-gold); background: rgba(226, 192, 108, .12); }
+.m-btn.primary { background: var(--m-gold); border-color: var(--m-gold); color: #1c1505; }
+.m-btn.primary:hover { background: #efd187; }
+.m-btn:disabled { cursor: not-allowed; color: rgba(251, 246, 233, .42); border-style: dashed; border-color: rgba(226, 192, 108, .25); }
+.menu-note { margin: -4px 0 0; font-size: .82rem; text-align: center; color: var(--m-soft); }
+#menu fieldset { margin: 0; padding: 0; border: 0; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+#menu legend { padding: 0; margin-bottom: 6px; font-size: .78rem; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--m-gold); }
+.seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; border: 1px solid var(--m-line); border-radius: 10px; overflow: hidden; }
+.seg input { position: absolute; opacity: 0; pointer-events: none; }
+.seg label { padding: 10px 4px 8px; text-align: center; cursor: pointer; font-weight: 600; font-size: .95rem; border-left: 1px solid var(--m-line); }
+.seg label:first-of-type { border-left: 0; }
+.seg label:hover { background: rgba(226, 192, 108, .12); }
+.seg input:checked + label { background: var(--m-gold); color: #1c1505; }
+.seg input:focus-visible + label, .m-btn:focus-visible { outline: 3px solid #fff; outline-offset: -3px; }
+.menu-hint { margin: 0; min-height: 2.5em; font-size: .86rem; line-height: 1.35; color: var(--m-soft); }
+.menu-row { display: grid; grid-template-columns: 1fr 2fr; gap: 10px; }
+#moves { display: flex; flex-wrap: wrap; gap: 6px; }
+#moves:not(:focus-within):not(.open) { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+#moves button { font: inherit; font-size: .8rem; padding: 3px 8px; border-radius: 6px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); }
+button:focus-visible, select:focus-visible, summary:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+details { font-size: .88rem; color: var(--muted); }
+details ul { padding-left: 1.2em; margin: 6px 0 0; max-width: 70ch; }
+summary { cursor: pointer; color: var(--ink); font-weight: 600; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Threefold</h1>
+    <div class="controls">
+      <label for="opt-font">Card font
+        <select id="opt-font"></select>
+      </label>
+      <button class="btn quiet" id="open-menu" type="button">Menu</button>
+      <button class="btn" id="new-game" type="button">New game</button>
+    </div>
+  </header>
+
+  <p id="status" role="status" aria-live="polite"></p>
+
+  <div id="stage">
+    <canvas id="view" aria-label="Card table. Use the move buttons after this to play with a keyboard."></canvas>
+    <div id="labels"></div>
+    <div id="burst" aria-hidden="true">
+      <canvas></canvas>
+      <div class="flash"></div>
+      <div class="streak"></div><div class="streak s2"></div><div class="streak s3"></div>
+      <div class="burst-num"></div>
+    </div>
+    <div id="cursor" aria-hidden="true">
+      <svg class="c-arrow" viewBox="0 0 26 26">
+        <path d="M3 3 L10.2 22.5 L13.2 14.6 L21.6 12 Z" fill="#fbf6e9" stroke="#c9a24a" stroke-width="1.3" stroke-linejoin="round"/>
+        <path d="M19 17.5 l.9 2.2 2.2.9 -2.2.9 -.9 2.2 -.9-2.2 -2.2-.9 2.2-.9 Z" fill="#f3d98b" stroke="#c9a24a" stroke-width=".5" stroke-linejoin="round"/>
+      </svg>
+      <svg class="c-hand" viewBox="0 0 30 34">
+        <g id="hand-shape">
+          <rect x="9" y="2" width="4.6" height="16" rx="2.3"/>
+          <rect x="13.4" y="10" width="4.4" height="10" rx="2.2"/>
+          <rect x="17.6" y="11" width="4.4" height="10" rx="2.2"/>
+          <rect x="21.8" y="12.6" width="4.2" height="9" rx="2.1"/>
+          <rect x="9" y="14" width="17" height="15.5" rx="5.5"/>
+          <rect x="2.6" y="15.2" width="10" height="4.8" rx="2.4" transform="rotate(38 7.6 17.6)"/>
+        </g>
+        <use href="#hand-shape" fill="#c9a24a" stroke="#c9a24a" stroke-width="2" stroke-linejoin="round"/>
+        <use href="#hand-shape" fill="#fbf6e9"/>
+        <path d="M13.5 13v5.6 M17.7 14v4.8 M21.9 15v4.2" stroke="#d9c79a" stroke-width=".8" stroke-linecap="round" fill="none"/>
+        <path d="M17.5 21.2 l1 2.4 2.4 1 -2.4 1 -1 2.4 -1-2.4 -2.4-1 2.4-1 Z" fill="#e8c873" stroke="#c9a24a" stroke-width=".5" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <div id="endgame" role="dialog" aria-modal="true" aria-labelledby="end-title">
+      <h2 id="end-title">You Win</h2>
+      <div id="end-actions">
+        <button type="button" class="m-btn primary" id="end-new">New game</button>
+        <button type="button" class="m-btn" id="end-menu">Menu</button>
+      </div>
+    </div>
+    <div id="menu" role="dialog" aria-modal="true" aria-labelledby="menu-title">
+      <div class="menu-card">
+        <section id="menu-home">
+          <h2 id="menu-title">Threefold</h2>
+          <p class="menu-sub">Reveal three of a kind to claim a trio.</p>
+          <div class="menu-actions">
+            <button type="button" class="m-btn ghost" id="menu-resume" hidden>Back to game</button>
+            <button type="button" class="m-btn primary" id="menu-single">Single player</button>
+            <button type="button" class="m-btn" id="menu-multi" disabled aria-describedby="multi-note">Multiplayer</button>
+            <p class="menu-note" id="multi-note">Multiplayer is coming soon.</p>
+          </div>
+        </section>
+        <form id="menu-setup" hidden>
+          <h2 id="setup-title">Single player</h2>
+          <fieldset>
+            <legend>Difficulty</legend>
+            <div class="seg">
+              <input type="radio" name="level" id="level-normal" value="normal"><label for="level-normal">Normal</label>
+              <input type="radio" name="level" id="level-hard" value="hard"><label for="level-hard">Hard</label>
+              <input type="radio" name="level" id="level-expert" value="expert"><label for="level-expert">Expert</label>
+              <input type="radio" name="level" id="level-master" value="master"><label for="level-master">Master</label>
+            </div>
+            <p class="menu-hint" id="hint-level"></p>
+          </fieldset>
+          <fieldset>
+            <legend>Players</legend>
+            <div class="seg">
+              <input type="radio" name="players" id="players-3" value="3"><label for="players-3">3</label>
+              <input type="radio" name="players" id="players-4" value="4"><label for="players-4">4</label>
+              <input type="radio" name="players" id="players-5" value="5"><label for="players-5">5</label>
+              <input type="radio" name="players" id="players-6" value="6"><label for="players-6">6</label>
+            </div>
+            <p class="menu-hint" id="hint-players"></p>
+          </fieldset>
+          <fieldset>
+            <legend>Mode</legend>
+            <div class="seg">
+              <input type="radio" name="mode" id="mode-simple" value="simple"><label for="mode-simple">Simple</label>
+              <input type="radio" name="mode" id="mode-spicy" value="spicy"><label for="mode-spicy">Spicy</label>
+            </div>
+            <p class="menu-hint" id="hint-mode"></p>
+          </fieldset>
+          <div class="menu-row">
+            <button type="button" class="m-btn" id="setup-back">Back</button>
+            <button type="submit" class="m-btn primary">Start game</button>
+          </div>
+        </form>
+      </div>
+    </div>
+    <div id="fail">The 3D table could not start on this device or browser. You can still play with the move buttons below.</div>
+  </div>
+  <div id="moves" aria-label="Available moves"></div>
+
+  <details>
+    <summary>How to play</summary>
+    <ul>
+      <li>There are 36 cards: three copies of each number from 1 to 12. Every hand is sorted from lowest to highest.</li>
+      <li>On your turn, reveal cards one at a time. Each reveal is either any face-down middle card, or the lowest or highest hidden card in any hand, including your own. Cards you can pick float slightly above the others. Your own cards are held up in front of you; point at one to enlarge it.</li>
+      <li>If a card does not match the one before it, your turn ends and every revealed card goes back where it was.</li>
+      <li>Reveal three of the same number and you keep them as a trio. Your turn then ends.</li>
+      <li>Simple mode: win with any three trios. Spicy mode: win with two connected trios, whose numbers add up to 7 or differ by 7 (the small numbers on each card).</li>
+      <li>The trio of 7s wins at once in either mode.</li>
+    </ul>
+  </details>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+/* ---------- Card faces: edit this block to re-theme the deck ----------
+   label: what is printed on the card. name: optional caption (a chakra name, for example).
+   color: background colour. image: optional data: URI painted behind the number. */
+const CARD_FACES = {};
+for (let n = 1; n <= 12; n++) {
+  CARD_FACES[n] = { label: String(n), name: '', color: `hsl(${(n - 1) * 30} 52% 40%)`, image: null };
+}
+// Cards that have been mapped so far. A card with an emblem gets a panel of drifting stars with the emblem floating
+// on it and its name in light lettering. The emblem spins once two of that card are revealed and flashes on a trio,
+// and pointing at it winds it up into a blur wreathed in fire (see SPIN and FIRE).
+// glow: the faint light around the pointer while it is over that card.
+// sky: the card's own night-sky colours (see CARD_SKY). fire: its own flame colours (see FIRE).
+// 1, Throat: blue, on drifting stars and midnight-blue clouds, with blue fire.
+Object.assign(CARD_FACES[1], { name: 'Throat Chakra', color: '#1b63ad', emblem: 'assets/throat.webp', glow: '#8fd0ff' });
+// 2, Crown: golden yellow, on a warm dark sky with gold clouds and gold-tinted stars, with golden fire.
+Object.assign(CARD_FACES[2], { name: 'Crown Chakra', color: '#c18d0a', emblem: 'assets/crown.webp', glow: '#ffd86b',
+  sky: { top: '#0a0600', bottom: '#1f1403', haze: 0.45, hazeColor: '#ffc93c', cloud: '200, 135, 18', starTint: '#ffe7a0' },
+  fire: { core: '255, 250, 220', mid: '255, 205, 90', tip: '232, 140, 20', ember: 0xffc040 } });
+// 3, Heart: rose pink, on a deep plum sky with rose clouds and little hearts floating upward, with pink fire.
+Object.assign(CARD_FACES[3], { name: 'Heart Chakra', color: '#c4467f', emblem: 'assets/heart.webp', glow: '#ff9fd0', backdrop: 'hearts',
+  sky: { top: '#0b0308', bottom: '#240a19', haze: 0.45, hazeColor: '#ff86bd', cloud: '205, 70, 135', starTint: '#ffd9ea' },
+  fire: { core: '255, 240, 247', mid: '255, 150, 202', tip: '222, 60, 142', ember: 0xff6fae } });
+// 4, Root: white. Its emblem floats over drifting white petals on a soft dusk sky and burns with white fire.
+Object.assign(CARD_FACES[4], { name: 'Root Chakra', color: '#93a1b8', emblem: 'assets/root.webp', glow: '#ffffff', backdrop: 'petals',
+  sky: { top: '#3f4963', bottom: '#8490a9', haze: 0.4, hazeColor: '#ffffff' },
+  fire: { core: '255, 255, 255', mid: '226, 234, 255', tip: '160, 178, 235', ember: 0xdde6ff } });
+// A card with a video uses it as its whole picture: a still frame at rest, playing once two of that card are revealed.
+// poster: the still shown before the video has ever played.
+Object.assign(CARD_FACES[9], { name: 'Holy Spirit', color: '#b6479a', video: 'assets/holy-spirit.mp4', poster: 'assets/holy-spirit.jpg' });
+// An emblem winds up while you point at it, and whenever two of its cards are revealed as a pair.
+// windUp: seconds to reach full speed under the pointer. pairWindUp: the same for a revealed pair. runDown: seconds to stop.
+// top: full speed in turns per second. The emblem smears into a blur and catches fire as it speeds up.
+const SPIN = { windUp: 6, pairWindUp: 3, runDown: 2.2, top: 13 };
+// Default fire colours as "red, green, blue": the hot core, the body of the flame, and the tips. A card can set its own.
+const FIRE = { size: 1.7, core: '150, 215, 255', mid: '50, 140, 255', tip: '20, 50, 215', ember: 0x2f8cff };
+// Fonts to try on the cards. The first is the default; the picker in the page switches between them.
+// Text is drawn in the lightest weight each font has.
+const CARD_FONTS = ['Josefin Sans', 'Raleway', 'Quicksand', 'Poiret One', 'Cormorant Garamond', 'Cinzel', 'Marcellus', 'Forum', 'Philosopher', 'Playfair Display', 'Georgia'];
+// weight: lettering on the plain numbered cards. artWeight: lettering on the starry art cards (400 normal, 600 semi-bold, 700 bold).
+const CARD_TEXT = { weight: 300, artWeight: 600, light: '#f4f7ff' };
+// Night sky behind an emblem: top and bottom colours, and how strongly the card's own colour hazes the middle (0 to 1).
+// cloud: the colour (as "red, green, blue") that drifts across the dark and swells and fades; cloudPeriod: seconds for one swell.
+// starTint: a colour wash over the stars. A card can override any of these with its own sky.
+const CARD_SKY = { top: '#000006', bottom: '#01030d', haze: 0.2, cloud: '25, 36, 122', cloudPeriod: 14, starTint: '#ffffff' };
+let CARD_FONT = CARD_FONTS[0];
+const CARD_BACK = { color: '#2b3350', line: 'rgba(255,255,255,.16)', image: null };
+// Room and table. Colours are CSS strings for painted wood, hex numbers for plain surfaces.
+// Ways to mark the cards you can play. HIGHLIGHT below names the one in use.
+// line: outline thickness in card widths (0 for none). blur: soft spread. lift: playable cards rise instead.
+const HIGHLIGHTS = {
+  'Black outline': { color: '#000000', line: 0.035, blur: 0 },
+  'Soft shadow':   { color: '#000000', line: 0, blur: 0.13, fill: true },
+  'Thin gold line': { color: '#f0cf7a', line: 0.028, blur: 0 },
+  'White outline': { color: '#ffffff', line: 0.035, blur: 0 },
+  'Soft glow':     { color: '#fff4d6', line: 0, blur: 0.14, fill: true },
+  'Lift only':     { lift: true }
+};
+let HIGHLIGHT = 'Lift only';   // the style in use
+const ROOM = {
+  tableWood: { base: '#7b4a26', dark: '#3d2210', light: '#b07a45', boards: 5, knots: 0.5, seed: 11 },
+  floorWood: { base: '#a98058', dark: '#6b4a2c', light: '#cda577', boards: 9, knots: 0.25, seed: 5 },
+  tableEdge: 0x4f2d1a, wall: 0x2f4a3c, beyond: 0x1b1917,
+  rug: 0x24382a, rugInner: 0x4c6a4a, // rug: the thin stitched edge. rugInner: shown until the photo loads rugImage: 'assets/rug.jpg',   // a photo laid across the rug, or null for plain colour
+  panorama: 'assets/room.jpg', panoramaFill: 0.3, // a 360 room photo for reflections and soft light, and how much plain fill light to keep alongside it
+  mat: { color: 0x41594a, inset: 0.45 }, // a plain cloth playing surface set into the table top, leaving a wood rim this wide; null for bare wood
+  tableImage: 'assets/table.jpg', // a wood photo stretched once across the table top, or null for painted boards
+  floorImage: 'assets/floor.jpg', floorTiles: 3 // a seamless floor photo and how many times it repeats across the room, or null for painted planks
+};
+// Card finish. gloss: 0 matte to 1 very shiny. weave: depth of the linen texture (0 turns it off). border: white margin as a share of card width.
+// paperImage: a photo of blank card stock used as the paper under everything printed on the card (null for the plain paper colour).
+const CARD_FINISH = { gloss: 0.7, weave: 0, border: 0.05, paper: '#fdfcf7', paperImage: 'assets/paper.jpg' };
+
+/*ENGINE-START*/
+const DEAL = { 3: [9, 9], 4: [7, 8], 5: [6, 6], 6: [5, 6] }; // players: [cards each, cards in the middle]
+const NAMES = ['You', 'Mira', 'Tobin', 'Sol', 'Wren', 'Kai'];
+const MEMORY = { normal: 0.25, hard: 0.5, expert: 0.8, master: 1 }; // chance a computer player remembers a card it sees
+
+const connected = n => [7 - n, n - 7, n + 7].filter(x => x >= 1 && x <= 12);
+
+function wins(trios, mode) {
+  if (trios.includes(7)) return true;
+  if (mode === 'simple') return trios.length >= 3;
+  return trios.some(a => connected(a).some(b => trios.includes(b)));
+}
+
+function newGame(nPlayers, mode, level, rng) {
+  const deck = [];
+  for (let n = 1; n <= 12; n++) for (let k = 0; k < 3; k++) deck.push({ id: (n - 1) * 3 + k, n, up: false });
+  for (let i = deck.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [deck[i], deck[j]] = [deck[j], deck[i]];
+  }
+  const per = DEAL[nPlayers][0];
+  const players = NAMES.slice(0, nPlayers).map((name, i) => ({
+    name, human: i === 0, trios: [], mem: [],
+    hand: deck.splice(0, per).sort((a, b) => a.n - b.n)
+  }));
+  return { mode, level, players, middle: deck, current: 0, revealed: [], pending: null, winner: null, msg: '' };
+}
+
+function allCards(s) {
+  return s.middle.filter(Boolean).concat(...s.players.map(p => p.hand));
+}
+const cardById = (s, id) => allCards(s).find(c => c.id === id);
+
+// Every legal reveal right now.
+function options(s) {
+  const out = [];
+  s.middle.forEach((c, i) => { if (c && !c.up) out.push({ where: 'mid', slot: i, card: c }); });
+  s.players.forEach((pl, p) => {
+    const down = pl.hand.filter(c => !c.up);
+    if (!down.length) return;
+    out.push({ where: 'hand', p, end: 'low', card: down[0] });
+    if (down.length > 1) out.push({ where: 'hand', p, end: 'high', card: down[down.length - 1] });
+  });
+  return out;
+}
+
+// Turn one card face up. Sets s.pending to 'miss' or 'trio' when the turn is decided.
+function reveal(s, opt, rng) {
+  const c = opt.card;
+  c.up = true;
+  s.revealed.push(c.id);
+  s.players.forEach(pl => {
+    if (!pl.human && !pl.mem.includes(c.id) && rng() < MEMORY[s.level]) pl.mem.push(c.id);
+  });
+  const ns = s.revealed.map(id => cardById(s, id).n);
+  if (ns.some(n => n !== ns[0])) s.pending = 'miss';
+  else if (ns.length === 3) s.pending = 'trio';
+  return s.pending;
+}
+
+// Finish a decided turn: award the trio or flip everything back, then pass the turn.
+function resolve(s) {
+  const ids = s.revealed;
+  if (s.pending === 'trio') {
+    const n = cardById(s, ids[0]).n;
+    s.middle = s.middle.map(c => (c && ids.includes(c.id) ? null : c));
+    s.players.forEach(pl => { pl.hand = pl.hand.filter(c => !ids.includes(c.id)); });
+    const cur = s.players[s.current];
+    cur.trios.push(n);
+    if (wins(cur.trios, s.mode)) s.winner = s.current;
+  } else {
+    allCards(s).forEach(c => { c.up = false; });
+  }
+  s.revealed = [];
+  s.pending = null;
+  if (s.winner === null) s.current = (s.current + 1) % s.players.length;
+}
+
+// Computer player: uses its own hand plus whatever it remembers seeing.
+function aiChoose(s, rng) {
+  const pl = s.players[s.current];
+  const knows = c => pl.hand.includes(c) || pl.mem.includes(c.id);
+  const opts = options(s);
+  const known = opts.filter(o => knows(o.card));
+  const unknown = opts.filter(o => !knows(o.card));
+  const pick = a => a[Math.floor(rng() * a.length)];
+  // Guess where an unseen copy of v might be: low numbers sit at the low end of hands, high at the high end.
+  const gamble = v => {
+    let best = null, top = -1;
+    for (const o of unknown) {
+      const base = o.where === 'mid' ? 0.4 : o.end === 'low' ? 1 - (v - 1) / 5 : 1 - (12 - v) / 5;
+      const score = base + rng() * 0.3;
+      if (score > top) { top = score; best = o; }
+    }
+    return best;
+  };
+
+  if (s.revealed.length) {
+    const v = cardById(s, s.revealed[0]).n;
+    const match = known.filter(o => o.card.n === v);
+    return pick(match) || gamble(v) || pick(opts);
+  }
+
+  // How many copies of each number this player knows it can reach in sequence.
+  const reach = {};
+  const add = n => { reach[n] = (reach[n] || 0) + 1; };
+  s.middle.forEach(c => { if (c && knows(c)) add(c.n); });
+  s.players.forEach(q => {
+    const h = q.hand;
+    let i = 0, j = h.length - 1;
+    if (h.length && knows(h[0])) { const n = h[0].n; while (i <= j && knows(h[i]) && h[i].n === n) { add(n); i++; } }
+    if (j >= i && knows(h[j])) { const n = h[j].n; while (j >= i && knows(h[j]) && h[j].n === n) { add(n); j--; } }
+  });
+  const ns = Object.keys(reach).map(Number);
+  const sure = ns.filter(n => reach[n] >= 3);
+  if (sure.length) {
+    const winning = sure.filter(n => wins(pl.trios.concat(n), s.mode));
+    const n = pick(winning.length ? winning : sure);
+    return pick(known.filter(o => o.card.n === n));
+  }
+  const pairs = ns.filter(n => reach[n] === 2);
+  const target = pairs.length ? pick(pairs)
+    : ns.length ? ns.reduce((a, b) => (Math.abs(b - 6.5) > Math.abs(a - 6.5) ? b : a))
+    : 1 + Math.floor(rng() * 12);
+  return gamble(target) || pick(known.filter(o => o.card.n === target)) || pick(opts);
+}
+/*ENGINE-END*/
+
+/* ---------- Game flow ---------- */
+const $ = id => document.getElementById(id);
+let S = null, OPTS = [], timer = null, View = null;
+// What the start menu last chose. players counts you; level is how well the computer players remember cards.
+const SETTINGS = { players: 3, mode: 'simple', level: 'normal' };
+let menuOpen = true, gameStarted = false;
+// Timing per difficulty, in milliseconds. ai: pause before each computer reveal. resolve: how long revealed cards
+// stay face up once a turn is decided, before they flip back or are collected. Easier levels give you longer to look.
+const SPEED = {
+  normal: { ai: 2200, resolve: 4200 },
+  hard:   { ai: 1700, resolve: 3000 },
+  expert: { ai: 1300, resolve: 1900 },
+  master: { ai: 1100, resolve: 1500 }
+};
+const PACE = { scale: 1 };   // multiplies every wait; 1 is normal speed
+const pace = kind => SPEED[S.level][kind] * PACE.scale;
+const YOUR_TURN = 'Your turn. Pick a middle card, or the lowest or highest card of any hand.';
+
+function describe(o) {
+  const me = S.players[S.current];
+  const who = me.human ? 'You' : me.name;
+  const n = o.card.n;
+  if (o.where === 'mid') return `${who} flipped a middle card: ${n}.`;
+  const end = o.end === 'low' ? 'lowest' : 'highest';
+  const owner = S.players[o.p];
+  if (o.p === S.current) return `${who} showed ${me.human ? 'your' : 'their'} own ${end} card: ${n}.`;
+  return `${who} asked ${owner.human ? 'you' : owner.name} for ${owner.human ? 'your' : 'their'} ${end} card: ${n}.`;
+}
+
+function optionLabel(o) {
+  if (o.where === 'mid') return `Middle card ${o.slot + 1}`;
+  const owner = S.players[o.p];
+  return `${owner.human ? 'Your' : owner.name + "'s"} ${o.end === 'low' ? 'lowest' : 'highest'} card`;
+}
+
+function play(o) {
+  let msg = describe(o);
+  const result = reveal(S, o, Math.random);
+  if (result === 'miss') msg += ' No match, so the cards go back.';
+  if (result === 'trio') {
+    msg += ` That makes a trio of ${o.card.n}s.`;
+    if (S.players[S.current].human) trioBurst(o.card.n);
+  }
+  S.msg = msg;
+  tick();
+}
+
+/* ---------- End of game ---------- */
+let endFocus = null;
+function showEnd() {
+  const el = $('endgame');
+  if (el.classList.contains('show')) return;
+  const won = S.winner === 0;
+  $('end-title').textContent = won ? 'You Win' : `${S.players[S.winner].name} Wins`;
+  el.classList.toggle('lost', !won);
+  el.classList.add('show');
+  // Move the keyboard to New game once the buttons have faded in.
+  clearTimeout(endFocus);
+  endFocus = setTimeout(() => { if (el.classList.contains('show')) $('end-new').focus({ preventScroll: true }); }, 3300);
+}
+function hideEnd() {
+  clearTimeout(endFocus);
+  $('endgame').classList.remove('show');
+}
+
+/* ---------- Trio burst ---------- */
+// A jagged line from a to b: split each segment at its middle and knock the middle sideways, several times over.
+function jagged(a, b, sway, rounds) {
+  const pts = [a, b];
+  for (let r = 0; r < rounds; r++) {
+    for (let i = pts.length - 1; i > 0; i--) {
+      const p = pts[i - 1], q = pts[i];
+      pts.splice(i, 0, [(p[0] + q[0]) / 2 + (Math.random() - 0.5) * sway, (p[1] + q[1]) / 2 + (Math.random() - 0.5) * sway * 0.45]);
+    }
+    sway /= 1.9;
+  }
+  return pts;
+}
+function strokeBolt(g, pts, width, color) {
+  g.lineJoin = g.lineCap = 'round';
+  g.beginPath();
+  pts.forEach((p, i) => (i ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1])));
+  g.shadowColor = color; g.shadowBlur = 30; g.strokeStyle = color;
+  g.globalAlpha = 0.3; g.lineWidth = width * 5; g.stroke();
+  g.globalAlpha = 0.7; g.lineWidth = width * 2.2; g.stroke();
+  g.globalAlpha = 1; g.shadowBlur = 10; g.strokeStyle = '#ffffff'; g.lineWidth = width; g.stroke();
+}
+// One lightning strike: a main bolt from the top of the table to the bottom, with a few forks.
+function drawLightning(g, w, h, from, to, color) {
+  g.clearRect(0, 0, w, h);
+  const width = Math.max(3.5, h * 0.011), main = jagged(from, to, w * 0.17, 6);
+  for (let k = 0; k < 6; k++) {
+    const start = main[Math.floor(main.length * (0.12 + Math.random() * 0.6))];
+    const len = h * (0.14 + Math.random() * 0.22), side = Math.random() < 0.5 ? -1 : 1, lean = 0.5 + Math.random() * 0.7;
+    strokeBolt(g, jagged(start, [start[0] + side * Math.sin(lean) * len, start[1] + Math.cos(lean) * len], len * 0.28, 4), width * 0.45, color);
+  }
+  strokeBolt(g, main, width, color);
+}
+let burstRun = 0;
+function trioBurst(n) {
+  const el = $('burst'), f = CARD_FACES[n], run = ++burstRun;
+  const w = $('stage').clientWidth, h = $('stage').clientHeight;
+  const color = f.glow || '#8fd0ff';
+  const calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  el.style.setProperty('--bolt', color);
+  const num = el.querySelector('.burst-num');
+  num.textContent = f.label;
+  num.style.fontSize = Math.min(h * 0.64, w * 0.52 / Math.max(1, f.label.length * 0.62)).toFixed(0) + 'px';
+  el.classList.remove('go');
+  void el.offsetWidth;   // restart the animations if a burst is already showing
+  el.classList.add('go');
+  const cv = el.querySelector('canvas'), dpr = Math.min(window.devicePixelRatio || 1, 2), g = cv.getContext('2d');
+  cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  cv.style.opacity = 0;
+  const from = [w * (0.3 + Math.random() * 0.4), -20], to = [w * (0.4 + Math.random() * 0.2), h + 20];
+  const at = (ms, fn) => setTimeout(() => { if (run === burstRun) fn(); }, ms);
+  // The bolt lands as the number reaches the middle, then flickers: each flicker is a freshly drawn bolt.
+  const strikes = calm ? [[380, 1, true], [1100, 0, false]]
+    : [[330, 1, true], [390, 0.2, false], [440, 1, true], [510, 0.15, false], [600, 0.85, true], [680, 0.3, false], [760, 0, false]];
+  strikes.forEach(([ms, alpha, redraw]) => at(ms, () => {
+    if (redraw) drawLightning(g, w, h, from, to, color);
+    cv.style.opacity = alpha;
+  }));
+  at(1900, () => el.classList.remove('go'));
+}
+
+function tick() {
+  clearTimeout(timer);
+  render();
+  if (!menuOpen && S.winner !== null) showEnd();
+  if (menuOpen || S.winner !== null) return;   // the game waits while the menu is open
+  if (S.pending) {
+    timer = setTimeout(() => {
+      resolve(S);
+      if (S.winner === null) {
+        const next = S.players[S.current];
+        S.msg = next.human ? YOUR_TURN : `${next.name}'s turn.`;
+      }
+      tick();
+    }, pace('resolve'));
+    return;
+  }
+  if (!S.players[S.current].human) {
+    timer = setTimeout(() => play(aiChoose(S, Math.random)), pace('ai'));
+  }
+}
+
+function render() {
+  const over = S.winner !== null;
+  const canAct = !menuOpen && !over && !S.pending && S.players[S.current].human;
+  OPTS = canAct ? options(S) : [];
+  $('status').textContent = !gameStarted ? 'Choose a game to begin.'
+    : over ? `${S.msg} ${S.winner === 0 ? 'You win!' : S.players[S.winner].name + ' wins.'} Press New game to play again.`
+    : menuOpen ? 'Game paused.' : S.msg;
+  const moves = $('moves');
+  moves.textContent = '';
+  OPTS.forEach((o, i) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = optionLabel(o);
+    b.dataset.opt = i;
+    moves.appendChild(b);
+  });
+  if (View) View.sync();
+}
+
+function startNew() {
+  S = newGame(SETTINGS.players, SETTINGS.mode, SETTINGS.level, Math.random);
+  S.v = 2;   // marks the current difficulty names
+  hideEnd();
+  S.msg = YOUR_TURN;
+  gameStarted = true;
+  menuOpen = false;
+  $('menu').hidden = true;
+  if (View) View.reset();
+  tick();
+}
+
+/* ---------- Start menu ---------- */
+const HINTS = {
+  level: {
+    normal: 'Opponents forget most of the cards they see. Revealed cards stay face up the longest.',
+    hard: 'Opponents forget about half of the cards they see. Revealed cards flip back a little sooner.',
+    expert: 'Opponents remember most of the cards they see. Revealed cards flip back quickly.',
+    master: 'Opponents remember every card they see. Revealed cards flip back fastest.'
+  },
+  mode: { simple: 'Win with any three trios, or with the trio of 7s.', spicy: 'Win with two connected trios, whose numbers add up to 7 or differ by 7, or with the trio of 7s.' }
+};
+function saveSettings() {
+  try { localStorage.setItem('threefold-settings-3', JSON.stringify(SETTINGS)); } catch (e) { /* storage may be unavailable */ }
+}
+function loadSettings() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('threefold-settings-3')) || {};
+    if (DEAL[saved.players]) SETTINGS.players = saved.players;
+    if (HINTS.mode[saved.mode]) SETTINGS.mode = saved.mode;
+    if (MEMORY[saved.level]) SETTINGS.level = saved.level;
+  } catch (e) { /* storage may be unavailable */ }
+}
+// Puts the current settings into the form and refreshes the line of explanation under each choice.
+function fillSetup() {
+  $('level-' + SETTINGS.level).checked = true;
+  $('players-' + SETTINGS.players).checked = true;
+  $('mode-' + SETTINGS.mode).checked = true;
+  $('hint-level').textContent = HINTS.level[SETTINGS.level];
+  $('hint-players').textContent = `You and ${SETTINGS.players - 1} computer players. ${DEAL[SETTINGS.players][0]} cards each, ${DEAL[SETTINGS.players][1]} in the middle.`;
+  $('hint-mode').textContent = HINTS.mode[SETTINGS.mode];
+}
+function showMenu(screen) {
+  hideEnd();
+  menuOpen = true;
+  clearTimeout(timer);
+  $('menu').hidden = false;
+  $('menu-home').hidden = screen !== 'home';
+  $('menu-setup').hidden = screen !== 'setup';
+  $('menu-resume').hidden = !(gameStarted && S && S.winner === null);
+  if (screen === 'setup') fillSetup();
+  if (S) render();
+  const first = screen === 'setup' ? $('level-' + SETTINGS.level) : $('menu-resume').hidden ? $('menu-single') : $('menu-resume');
+  first.focus({ preventScroll: true });
+}
+function resumeGame() {
+  menuOpen = false;
+  $('menu').hidden = true;
+  tick();
+}
+$('open-menu').addEventListener('click', () => showMenu('home'));
+$('end-new').addEventListener('click', startNew);
+$('end-menu').addEventListener('click', () => showMenu('home'));
+$('menu-single').addEventListener('click', () => showMenu('setup'));
+$('setup-back').addEventListener('click', () => showMenu('home'));
+$('menu-resume').addEventListener('click', resumeGame);
+$('menu-setup').addEventListener('change', e => {
+  if (e.target.name === 'players') SETTINGS.players = +e.target.value;
+  else if (e.target.name in SETTINGS) SETTINGS[e.target.name] = e.target.value;
+  fillSetup();
+});
+$('menu-setup').addEventListener('submit', e => {
+  e.preventDefault();
+  saveSettings();
+  startNew();
+});
+$('menu').addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  if (!$('menu-setup').hidden) showMenu('home');
+  else if (!$('menu-resume').hidden) resumeGame();
+});
+
+$('moves').addEventListener('click', e => {
+  const b = e.target.closest('[data-opt]');
+  if (b && OPTS[+b.dataset.opt]) play(OPTS[+b.dataset.opt]);
+});
+$('new-game').addEventListener('click', startNew);
+
+// Card font picker: remembers your choice in this browser and repaints the cards once the font has loaded.
+function useFont(name) {
+  CARD_FONT = name;
+  try { localStorage.setItem('threefold-card-font', name); } catch (e) { /* storage may be unavailable */ }
+  const repaint = () => { if (View && CARD_FONT === name) View.repaint(); };
+  repaint();
+  if (document.fonts && document.fonts.load) {
+    Promise.all([300, 400, 600].map(w => document.fonts.load(`${w} 40px "${name}"`))).then(repaint, repaint);
+  }
+}
+CARD_FONTS.forEach(name => {
+  const o = document.createElement('option');
+  o.value = o.textContent = name;
+  $('opt-font').appendChild(o);
+});
+$('opt-font').addEventListener('change', e => useFont(e.target.value));
+
+
+/* ---------- 3D table ---------- */
+function makeView() {
+  const stage = $('stage'), canvas = $('view'), labels = $('labels');
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const CW = 1, CH = 1.4;                            // card size in table units
+  const EDGE = { x: 10.3, zFar: -7.5, zNear: 4.5 };  // table extents
+  const HAND = { dist: 6, size: 0.85, grow: 1.4, raise: 0.4 }; // your held cards: distance from the camera, size, hover growth, height above the bottom edge
+
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(40, 1, 1, 200);
+
+  scene.background = new THREE.Color(ROOM.beyond);
+  const fill = new THREE.HemisphereLight(0xfff3e0, 0x7a6450, 0.62);
+  scene.add(fill);
+  const sun = new THREE.DirectionalLight(0xfff0dc, 0.5);
+  sun.position.set(5, 16, 7);
+  sun.castShadow = true;
+  sun.shadow.mapSize.set(2048, 2048);
+  sun.shadow.camera.left = -24; sun.shadow.camera.right = 24;
+  sun.shadow.camera.top = 24; sun.shadow.camera.bottom = -24;
+  sun.shadow.camera.near = 1; sun.shadow.camera.far = 70;
+  sun.shadow.bias = -0.0006;
+  scene.add(sun);
+
+  // A simple room of soft light panels, so glossy cards have something to reflect.
+  try {
+    const pmrem = new THREE.PMREMGenerator(renderer);
+    const room = new THREE.Scene();
+    room.add(new THREE.Mesh(new THREE.BoxGeometry(44, 44, 44), new THREE.MeshBasicMaterial({ color: 0x2e2a26, side: THREE.BackSide })));
+    const lamp = new THREE.MeshBasicMaterial({ color: 0xffffff });
+    [[0, 19, 0, 16, 0.5, 10], [-19, 6, 4, 0.5, 8, 12], [19, 8, -6, 0.5, 6, 10], [0, 7, 19, 14, 6, 0.5]].forEach(([x, y, z, w, h, d]) => {
+      const panel = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), lamp);
+      panel.position.set(x, y, z);
+      room.add(panel);
+    });
+    scene.environment = pmrem.fromScene(room, 0.04).texture;
+    pmrem.dispose();
+  } catch (err) {
+    console.warn('Reflections are off:', err);
+  }
+  // A real room photo replaces the stand-in panels once it has loaded.
+  if (ROOM.panorama) {
+    new THREE.TextureLoader().load(ROOM.panorama, tex => {
+      try {
+        tex.mapping = THREE.EquirectangularReflectionMapping;
+        tex.encoding = THREE.sRGBEncoding;
+        const pmrem = new THREE.PMREMGenerator(renderer);
+        scene.environment = pmrem.fromEquirectangular(tex).texture;
+        pmrem.dispose();
+        tex.dispose();
+        fill.intensity = ROOM.panoramaFill; // the photo now supplies most of the soft light
+      } catch (err) {
+        console.warn('Room photo could not be used for reflections:', err);
+      }
+    }, undefined, () => console.warn('Room photo did not load; using the stand-in reflections.'));
+  }
+
+  /*WOOD-START*/
+  // Paints wooden boards running left to right: tone variation per board, wavy grain, the odd knot, dark seams.
+  function paintWood(cv, o) {
+    const g = cv.getContext('2d'), W = cv.width, H = cv.height, bh = H / o.boards;
+    let seed = o.seed;
+    const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+    for (let b = 0; b < o.boards; b++) {
+      const y0 = b * bh;
+      g.save();
+      g.beginPath(); g.rect(0, y0, W, bh); g.clip();
+      g.fillStyle = o.base; g.fillRect(0, y0, W, bh);
+      g.globalAlpha = rnd() * 0.22; g.fillStyle = rnd() < 0.5 ? o.dark : o.light; g.fillRect(0, y0, W, bh);
+      for (let i = 0; i < 90; i++) {
+        const y = y0 + rnd() * bh, amp = 1 + rnd() * 5, ph = rnd() * 6.28, fq = 0.003 + rnd() * 0.009;
+        g.strokeStyle = rnd() < 0.7 ? o.dark : o.light;
+        g.globalAlpha = 0.05 + rnd() * 0.2;
+        g.lineWidth = 0.6 + rnd() * 2.4;
+        g.beginPath();
+        for (let x = 0; x <= W; x += 16) { const yy = y + Math.sin(x * fq + ph) * amp; if (x) g.lineTo(x, yy); else g.moveTo(x, yy); }
+        g.stroke();
+      }
+      if (rnd() < o.knots) {
+        const kx = rnd() * W, ky = y0 + bh * (0.3 + rnd() * 0.4);
+        g.strokeStyle = o.dark; g.lineWidth = 2; g.globalAlpha = 0.14;
+        for (let r = 20; r > 2; r -= 3) { g.beginPath(); g.ellipse(kx, ky, r * 1.9, r, 0, 0, 6.28); g.stroke(); }
+      }
+      g.restore();
+      g.fillStyle = 'rgba(0,0,0,.5)'; g.fillRect(0, y0, W, 2);
+    }
+  }
+  /*WOOD-END*/
+  function woodTexture(o, w, h) {
+    const cv = document.createElement('canvas');
+    cv.width = w; cv.height = h;
+    paintWood(cv, o);
+    const tex = new THREE.CanvasTexture(cv);
+    tex.encoding = THREE.sRGBEncoding;
+    tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+    tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+    return tex;
+  }
+  function roundedShape(hw, hh, r) {
+    const s = new THREE.Shape();
+    s.moveTo(-hw + r, -hh);
+    s.lineTo(hw - r, -hh); s.quadraticCurveTo(hw, -hh, hw, -hh + r);
+    s.lineTo(hw, hh - r); s.quadraticCurveTo(hw, hh, hw - r, hh);
+    s.lineTo(-hw + r, hh); s.quadraticCurveTo(-hw, hh, -hw, hh - r);
+    s.lineTo(-hw, -hh + r); s.quadraticCurveTo(-hw, -hh, -hw + r, -hh);
+    return s;
+  }
+  const flat = (mesh, y, z) => { mesh.rotation.x = -Math.PI / 2; mesh.position.set(0, y, z); return mesh; };
+  const tableZ = (EDGE.zFar + EDGE.zNear) / 2, tableHalfZ = (EDGE.zNear - EDGE.zFar) / 2;
+  const FLOOR_Y = -12, SLAB = 0.6;
+
+  // Tabletop: varnished boards. The shape's own coordinates become the texture coordinates, so scale them to fit once.
+  const topTex = woodTexture(ROOM.tableWood, 1536, 896);
+  topTex.repeat.set(1 / (2 * EDGE.x), 1 / (2 * tableHalfZ));
+  topTex.offset.set(0.5, 0.5);
+  const tableShape = roundedShape(EDGE.x, tableHalfZ, 0.9);
+  const top = flat(new THREE.Mesh(new THREE.ShapeGeometry(tableShape, 16),
+    new THREE.MeshStandardMaterial({ map: topTex, roughness: 0.5, metalness: 0, envMapIntensity: 0.55 })), 0, tableZ);
+  top.receiveShadow = true;
+  scene.add(top);
+  if (ROOM.mat) {
+    top.position.y = -0.015;
+    const mat = flat(new THREE.Mesh(
+      new THREE.ShapeGeometry(roundedShape(EDGE.x - ROOM.mat.inset, tableHalfZ - ROOM.mat.inset, 0.6), 16),
+      new THREE.MeshStandardMaterial({ color: ROOM.mat.color, roughness: 1, metalness: 0, envMapIntensity: 0.15 })), 0, tableZ);
+    mat.receiveShadow = true;
+    scene.add(mat);
+  }
+  if (ROOM.tableImage) {
+    new THREE.TextureLoader().load(ROOM.tableImage, tex => {
+      tex.encoding = THREE.sRGBEncoding;
+      tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.copy(topTex.repeat);
+      tex.offset.copy(topTex.offset);
+      tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+      top.material.map = tex;
+      top.material.needsUpdate = true;
+    }, undefined, () => console.warn('Table image did not load; using painted boards.'));
+  }
+  const edgeMat = new THREE.MeshStandardMaterial({ color: ROOM.tableEdge, roughness: 0.6, metalness: 0, envMapIntensity: 0.4 });
+  const slab = flat(new THREE.Mesh(new THREE.ExtrudeGeometry(tableShape, { depth: SLAB, bevelEnabled: false, curveSegments: 16 }), edgeMat), -SLAB - 0.02, tableZ);
+  slab.castShadow = true;
+  scene.add(slab);
+  const legH = -FLOOR_Y - SLAB;
+  [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([sx, sz]) => {
+    const leg = new THREE.Mesh(new THREE.BoxGeometry(1, legH, 1), edgeMat);
+    leg.position.set(sx * (EDGE.x - 1.5), FLOOR_Y + legH / 2, tableZ + sz * (tableHalfZ - 1.5));
+    leg.castShadow = true;
+    scene.add(leg);
+  });
+
+  // Room: plank floor, a rug under the table, three walls.
+  const floorTex = woodTexture(ROOM.floorWood, 1024, 1024);
+  floorTex.repeat.set(3, 3);
+  const floor = flat(new THREE.Mesh(new THREE.PlaneGeometry(96, 96),
+    new THREE.MeshStandardMaterial({ map: floorTex, roughness: 0.65, metalness: 0, envMapIntensity: 0.35 })), FLOOR_Y, tableZ);
+  floor.receiveShadow = true;
+  scene.add(floor);
+  if (ROOM.floorImage) {
+    new THREE.TextureLoader().load(ROOM.floorImage, tex => {
+      tex.encoding = THREE.sRGBEncoding;
+      tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(ROOM.floorTiles, ROOM.floorTiles);
+      tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+      floor.material.map = tex;
+      floor.material.needsUpdate = true;
+    }, undefined, () => console.warn('Floor image did not load; using painted planks.'));
+  }
+  const rugMat = c => new THREE.MeshStandardMaterial({ color: c, roughness: 1, metalness: 0, envMapIntensity: 0.1 });
+  const rug = flat(new THREE.Mesh(new THREE.ShapeGeometry(roundedShape(15.62, 11.12, 0.45), 8), rugMat(ROOM.rug)), FLOOR_Y + 0.03, tableZ);
+  rug.receiveShadow = true;
+  scene.add(rug);
+  const rugInnerMat = rugMat(ROOM.rugInner);
+  if (ROOM.rugImage) {
+    new THREE.TextureLoader().load(ROOM.rugImage, tex => {
+      tex.encoding = THREE.sRGBEncoding;
+      tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+      tex.repeat.set(1 / 31, 1 / 22);   // the rug's own size, so the photo covers it exactly once
+      tex.offset.set(0.5, 0.5);
+      rugInnerMat.map = tex;
+      rugInnerMat.color.set(0xffffff);
+      rugInnerMat.needsUpdate = true;
+    }, undefined, () => console.warn('Rug image did not load; using the plain colour.'));
+  }
+  const rugInner = flat(new THREE.Mesh(new THREE.ShapeGeometry(roundedShape(15.5, 11, 0.4), 8), rugInnerMat), FLOOR_Y + 0.05, tableZ);
+  rugInner.receiveShadow = true;
+  scene.add(rugInner);
+  const wallMat = new THREE.MeshStandardMaterial({ color: ROOM.wall, roughness: 0.95, metalness: 0, envMapIntensity: 0.2 });
+  const wallH = 44;
+  const farWall = new THREE.Mesh(new THREE.PlaneGeometry(96, wallH), wallMat);
+  farWall.position.set(0, FLOOR_Y + wallH / 2, tableZ - 26);
+  scene.add(farWall);
+  [-1, 1].forEach(sx => {
+    const wall = new THREE.Mesh(new THREE.PlaneGeometry(96, wallH), wallMat);
+    wall.rotation.y = -sx * Math.PI / 2;
+    wall.position.set(sx * 36, FLOOR_Y + wallH / 2, tableZ);
+    scene.add(wall);
+  });
+
+  // Card textures, painted on canvases so the faces stay data-driven.
+  const TW = 320, TH = 448, TS = 2;
+  const EMBLEM = { y: 186, size: 228 };   // where the emblem floats on the card face, in TW x TH units
+  let paperImg = null, backImg = null;
+  const faceImgs = {};
+  function roundRect(g, x, y, w, h, r) {
+    g.beginPath();
+    g.moveTo(x + r, y);
+    g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r);
+    g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r);
+    g.closePath();
+  }
+  function makeTexture() {
+    const cv = document.createElement('canvas');
+    cv.width = TW * TS; cv.height = TH * TS;
+    const tex = new THREE.CanvasTexture(cv);
+    tex.encoding = THREE.sRGBEncoding;
+    tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+    const g = cv.getContext('2d');
+    g.scale(TS, TS); // painting code below works in TW x TH units; the canvas holds TS times the detail
+    return { cv, tex, g };
+  }
+  function loadImage(src, done) {
+    if (!src) return;
+    const img = new Image();
+    img.onload = () => done(img);
+    img.src = src;
+  }
+  // Blank card: paper-white stock with a rounded coloured panel inside a white border.
+  const INSET = Math.round(TW * CARD_FINISH.border);
+  function panelPath(g, extra, r) {
+    roundRect(g, INSET + extra, INSET + extra, TW - 2 * (INSET + extra), TH - 2 * (INSET + extra), r);
+  }
+  function paintBlank(g, fill, img) {
+    g.clearRect(0, 0, TW, TH);
+    roundRect(g, 2, 2, TW - 4, TH - 4, 30); g.fillStyle = CARD_FINISH.paper; g.fill();
+    if (paperImg) { g.save(); g.clip(); g.drawImage(paperImg, 0, 0, TW, TH); g.restore(); roundRect(g, 2, 2, TW - 4, TH - 4, 30); }
+    g.strokeStyle = 'rgba(0,0,0,.22)'; g.lineWidth = 2; g.stroke();
+    if (!fill) return;
+    panelPath(g, 0, 16); g.fillStyle = fill; g.fill();
+    if (img) { g.save(); panelPath(g, 0, 16); g.clip(); g.drawImage(img, INSET, INSET, TW - 2 * INSET, TH - 2 * INSET); g.restore(); }
+  }
+  function paintKeyline(g) {
+    panelPath(g, 9, 9); g.strokeStyle = 'rgba(255,255,255,.6)'; g.lineWidth = 3; g.stroke();
+  }
+  const faces = {};
+  // Sets the largest font size up to `size` at which the text fits in maxW.
+  function fitFont(g, text, weight, size, maxW) {
+    for (;;) {
+      g.font = `${weight} ${size}px "${CARD_FONT}", Georgia, serif`;
+      if (size <= 8 || g.measureText(text).width <= maxW) return;
+      size -= 1;
+    }
+  }
+  // Night sky for an art card's panel: near-black blue with a faint haze of the card's colour where the emblem floats.
+  // It is its own unlit layer, so room light and the card's gloss never wash it out.
+  function skyTexture(n) {
+    const cv = document.createElement('canvas');
+    cv.width = 160; cv.height = 224;
+    const g = cv.getContext('2d'), ey = (EMBLEM.y - INSET) / (TH - 2 * INSET) * cv.height;
+    const sky = g.createLinearGradient(0, 0, 0, cv.height);
+    const look = Object.assign({}, CARD_SKY, CARD_FACES[n].sky);
+    sky.addColorStop(0, look.top); sky.addColorStop(1, look.bottom);
+    g.fillStyle = sky; g.fillRect(0, 0, cv.width, cv.height);
+    const haze = g.createRadialGradient(cv.width / 2, ey, 4, cv.width / 2, ey, cv.width * 0.62);
+    haze.addColorStop(0, look.hazeColor || CARD_FACES[n].color); haze.addColorStop(1, 'rgba(0,0,0,0)');
+    g.globalAlpha = look.haze; g.fillStyle = haze; g.fillRect(0, 0, cv.width, cv.height);
+    const tex = new THREE.CanvasTexture(cv);
+    tex.encoding = THREE.sRGBEncoding;
+    return tex;
+  }
+  // Lettering for an art card, on a clear layer above the stars.
+  const texts = {};
+  function paintText(n) {
+    const { g, tex } = texts[n], f = CARD_FACES[n];
+    const links = S && S.mode === 'spicy' ? connected(n).join('  ·  ') : '';
+    const panelW = TW - 2 * INSET, W = CARD_TEXT.artWeight;
+    g.clearRect(0, 0, TW, TH);
+    panelPath(g, 8, 10); g.strokeStyle = 'rgba(255,255,255,.3)'; g.lineWidth = 1.5; g.stroke();
+    g.textBaseline = 'middle'; g.textAlign = 'center';
+    g.fillStyle = CARD_TEXT.light;
+    g.shadowColor = 'rgba(0,0,8,.9)'; g.shadowBlur = 7 * TS;   // a dark halo keeps the lettering clear of the stars behind it
+    fitFont(g, f.label, W, 42, 58);
+    g.fillText(f.label, INSET + 34, INSET + 40);
+    g.save(); g.translate(TW - INSET - 34, TH - INSET - 40); g.rotate(Math.PI); g.fillText(f.label, 0, 0); g.restore();
+    if (f.name) { fitFont(g, f.name, W, 33, panelW - 36); g.fillText(f.name, TW / 2, 342); }
+    if (links) { fitFont(g, links, W, 23, 140); g.fillText(links, TW / 2, 386); }
+    g.shadowColor = 'transparent'; g.shadowBlur = 0;
+    tex.needsUpdate = true;
+  }
+  // Sets the largest font size up to `size` at which the text fits in maxW.
+  function fitFont(g, text, weight, size, maxW) {
+    for (;;) {
+      g.font = `${weight} ${size}px "${CARD_FONT}", Georgia, serif`;
+      if (size <= 8 || g.measureText(text).width <= maxW) return;
+      size -= 1;
+    }
+  }
+  function paintFace(n) {
+    const { g, tex } = faces[n], f = CARD_FACES[n], img = faceImgs[n] || null;
+    const links = S && S.mode === 'spicy' ? connected(n).join('  ·  ') : '';
+    const panelW = TW - 2 * INSET, W = CARD_TEXT.weight;
+    g.textBaseline = 'middle';
+    g.textAlign = 'center';
+    if (f.emblem || f.video) {
+      // Art card: only the card stock is printed here. Sky, stars, emblem and lettering are layers above it.
+      paintBlank(g, (f.sky && f.sky.top) || CARD_SKY.top, null);
+      paintText(n);
+    } else {
+      // Placeholder card: a coloured panel with a large number.
+      paintBlank(g, f.color, img);
+      if (!img) paintKeyline(g);
+      g.fillStyle = '#ffffff';
+      fitFont(g, f.label, W, 180, panelW - 44);
+      g.fillText(f.label, TW / 2, TH / 2 - 14);
+      fitFont(g, f.label, W, 42, 60);
+      g.fillText(f.label, INSET + 40, INSET + 46);
+      if (f.name) { fitFont(g, f.name, 400, 26, panelW - 36); g.fillText(f.name, TW / 2, TH - 120); }
+      if (links) { fitFont(g, links, W, 32, panelW - 60); g.fillText(links, TW / 2, TH - INSET - 44); }
+    }
+    tex.needsUpdate = true;
+  }
+  function paintAllFaces() {
+    for (let n = 1; n <= 12; n++) paintFace(n);
+  }
+  const back = makeTexture();
+  function paintBack() {
+    const g = back.g, img = backImg;
+    paintBlank(g, CARD_BACK.color, img);
+    if (!img) {
+      g.save(); panelPath(g, 0, 16); g.clip();
+      g.strokeStyle = CARD_BACK.line; g.lineWidth = 6;
+      for (let d = -TH; d < TW + TH; d += 36) {
+        g.beginPath(); g.moveTo(d, 0); g.lineTo(d + TH, TH); g.stroke();
+        g.beginPath(); g.moveTo(d + TH, 0); g.lineTo(d, TH); g.stroke();
+      }
+      g.restore();
+      paintKeyline(g);
+    }
+    back.tex.needsUpdate = true;
+  }
+  // Linen weave, used as a height map so the card surface catches the light like embossed stock.
+  function linenTexture() {
+    const cv = document.createElement('canvas');
+    cv.width = 256; cv.height = 358;
+    const g = cv.getContext('2d');
+    g.fillStyle = '#808080'; g.fillRect(0, 0, cv.width, cv.height);
+    for (let i = 0; i < cv.height; i += 4) {
+      g.fillStyle = 'rgba(255,255,255,.28)'; g.fillRect(i, 0, 1, cv.height); g.fillRect(0, i, cv.width, 1);
+      g.fillStyle = 'rgba(0,0,0,.28)'; g.fillRect(i + 2, 0, 1, cv.height); g.fillRect(0, i + 2, cv.width, 1);
+    }
+    for (let i = 0; i < 5000; i++) {
+      g.fillStyle = Math.random() < 0.5 ? 'rgba(255,255,255,.12)' : 'rgba(0,0,0,.12)';
+      g.fillRect(Math.random() * cv.width, Math.random() * cv.height, 1, 1);
+    }
+    return new THREE.CanvasTexture(cv);
+  }
+  const linen = CARD_FINISH.weave > 0 ? linenTexture() : null;
+  // Printed card stock under a clear glossy coat.
+  function cardMaterial(map) {
+    return new THREE.MeshPhysicalMaterial({
+      map, alphaTest: 0.5, shadowSide: THREE.DoubleSide, metalness: 0, envMapIntensity: 0.8,
+      roughness: 0.75 - CARD_FINISH.gloss * 0.35,
+      clearcoat: CARD_FINISH.gloss, clearcoatRoughness: 0.4 - CARD_FINISH.gloss * 0.3,
+      bumpMap: linen, bumpScale: CARD_FINISH.weave
+    });
+  }
+  paintBack();
+  // Images arrive after the first paint; each one repaints the cards it affects.
+  loadImage(CARD_BACK.image, img => { backImg = img; paintBack(); });
+  loadImage(CARD_FINISH.paperImage, img => { paperImg = img; paintBack(); for (let n = 1; n <= 12; n++) if (faces[n]) paintFace(n); });
+  for (let n = 1; n <= 12; n++) {
+    loadImage(CARD_FACES[n].image, img => { faceImgs[n] = img; if (faces[n]) paintFace(n); });
+  }
+
+  // Cards: a pivot (place, turn, size) holding a body (flip) with a face plane and a back plane.
+  const cardGeo = new THREE.PlaneGeometry(CW, CH);
+  // Highlight for playable cards: a picture slightly larger than the card, tucked just under it, so only the
+  // part outside the card's edge shows. One picture per style in HIGHLIGHTS.
+  const HALO_PAD = 0.2, HALO_PX = 190;   // margin around the card in card widths; pixels per card width
+  const haloGeo = new THREE.PlaneGeometry(CW + 2 * HALO_PAD, CH + 2 * HALO_PAD);
+  function haloTexture(style) {
+    const cv = document.createElement('canvas');
+    cv.width = Math.round((CW + 2 * HALO_PAD) * HALO_PX); cv.height = Math.round((CH + 2 * HALO_PAD) * HALO_PX);
+    const g = cv.getContext('2d'), pad = HALO_PAD * HALO_PX, r = 30 / TW * HALO_PX;
+    if (!style.lift) {
+      if (style.fill) {
+        g.shadowColor = style.color; g.shadowBlur = style.blur * HALO_PX; g.fillStyle = style.color;
+        for (let i = 0; i < 3; i++) { roundRect(g, pad, pad, CW * HALO_PX, CH * HALO_PX, r); g.fill(); }
+      } else {
+        const w = style.line * HALO_PX;
+        roundRect(g, pad - w / 2 + 1, pad - w / 2 + 1, CW * HALO_PX + w - 2, CH * HALO_PX + w - 2, r + w / 2);
+        g.strokeStyle = style.color; g.lineWidth = w; g.stroke();
+      }
+    }
+    const tex = new THREE.CanvasTexture(cv);
+    tex.encoding = THREE.sRGBEncoding;
+    return tex;
+  }
+  const haloTextures = {};
+  Object.keys(HIGHLIGHTS).forEach(name => { haloTextures[name] = haloTexture(HIGHLIGHTS[name]); });
+  let highlight = HIGHLIGHTS[HIGHLIGHT];
+  const haloMat = new THREE.MeshBasicMaterial({ map: haloTextures[HIGHLIGHT], transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 });
+  const backMat = cardMaterial(back.tex);
+  // Layers that sit just above a card's printed face. Each is nudged toward the camera so it never flickers
+  // against the card, and drawn in a fixed order: sky, blue clouds, far stars, near stars, emblem, lettering, flash.
+  function overlayMaterial(opts, order) {
+    return new THREE.MeshBasicMaterial(Object.assign({ transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -order, polygonOffsetUnits: -order }, opts));
+  }
+  function overlayMesh(geo, material, order, z) {
+    const m = new THREE.Mesh(geo, material);
+    m.rotation.x = -Math.PI / 2;
+    m.position.set(0, 0.009 + order * 0.001, z || 0);
+    m.renderOrder = order;
+    m.raycast = () => {};   // the card underneath handles the pointer
+    return m;
+  }
+
+  // Drifting stars: one seamless tile of stars, used twice at different sizes and speeds for depth.
+  const STAR_TILE = 512;
+  const starCanvas = document.createElement('canvas');
+  starCanvas.width = starCanvas.height = STAR_TILE;
+  {
+    const g = starCanvas.getContext('2d');
+    let seed = 4211;
+    const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+    // Draw each star at every wrapped position so the tile repeats without a seam.
+    const wrapped = (x, y, r, draw) => { for (const dx of [-STAR_TILE, 0, STAR_TILE]) for (const dy of [-STAR_TILE, 0, STAR_TILE]) {
+      if (x + dx > -r && x + dx < STAR_TILE + r && y + dy > -r && y + dy < STAR_TILE + r) draw(x + dx, y + dy); } };
+    for (let i = 0; i < 230; i++) {
+      const x = rnd() * STAR_TILE, y = rnd() * STAR_TILE, r = 0.6 + Math.pow(rnd(), 3) * 2.2, a = 0.35 + rnd() * 0.65;
+      const tint = ['#ffffff', '#cfe3ff', '#fff1d6'][Math.floor(rnd() * 3)];
+      wrapped(x, y, r, (px, py) => { g.globalAlpha = a; g.fillStyle = tint; g.beginPath(); g.arc(px, py, r, 0, 6.2832); g.fill(); });
+    }
+    for (let i = 0; i < 9; i++) {
+      const x = rnd() * STAR_TILE, y = rnd() * STAR_TILE, r = 7 + rnd() * 7;
+      wrapped(x, y, r * 1.6, (px, py) => {
+        const glow = g.createRadialGradient(px, py, 0, px, py, r);
+        glow.addColorStop(0, 'rgba(255,255,255,.95)'); glow.addColorStop(0.25, 'rgba(210,228,255,.45)'); glow.addColorStop(1, 'rgba(210,228,255,0)');
+        g.globalAlpha = 1; g.fillStyle = glow; g.fillRect(px - r, py - r, 2 * r, 2 * r);
+        g.strokeStyle = 'rgba(255,255,255,.6)'; g.lineWidth = 1;
+        g.beginPath(); g.moveTo(px - r * 1.5, py); g.lineTo(px + r * 1.5, py); g.moveTo(px, py - r * 1.5); g.lineTo(px, py + r * 1.5); g.stroke();
+      });
+    }
+  }
+  // speed: card widths per second the layer drifts, across and up.
+  const starLayers = [{ repeat: 1.15, speed: [0.011, 0.006], turn: 0 }, { repeat: 0.62, speed: [0.03, 0.015], turn: Math.PI / 2 }].map((o, i) => {
+    const tex = new THREE.CanvasTexture(starCanvas);
+    tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+    tex.repeat.set(o.repeat, o.repeat);
+    tex.rotation = o.turn;
+    tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+    return { tex, speed: o.speed };
+  });
+  // Star materials per tint (white for most skies, gold for the crown), made once and shared.
+  const starSets = {};
+  const starSet = tint => starSets[tint] || (starSets[tint] = starLayers.map((layer, i) => overlayMaterial({ map: layer.tex, opacity: i ? 0.8 : 0.9, color: tint }, i + 3)));
+  /*PETAL-START*/
+  // Drifting petals: one seamless tile of white flower petals, each a soft teardrop with a little shading.
+  function paintPetals(cv, seed, count) {
+    const g = cv.getContext('2d'), T = cv.width;
+    let sd = seed;
+    const rnd = () => { sd = (sd * 16807) % 2147483647; return sd / 2147483647; };
+    for (let i = 0; i < count; i++) {
+      const x = rnd() * T, y = rnd() * T, len = 26 + rnd() * 34, wide = len * (0.42 + rnd() * 0.2), turn = rnd() * 6.2832, curl = (rnd() - 0.5) * 0.5;
+      for (const dx of [-T, 0, T]) for (const dy of [-T, 0, T]) {
+        const px = x + dx, py = y + dy;
+        if (px < -len || px > T + len || py < -len || py > T + len) continue;
+        g.save();
+        g.translate(px, py); g.rotate(turn);
+        g.beginPath();
+        g.moveTo(0, -len / 2);
+        g.bezierCurveTo(wide * (0.9 + curl), -len * 0.3, wide * (0.75 + curl), len * 0.35, 0, len / 2);
+        g.bezierCurveTo(-wide * (0.75 - curl), len * 0.35, -wide * (0.9 - curl), -len * 0.3, 0, -len / 2);
+        g.shadowColor = 'rgba(20, 28, 60, .4)'; g.shadowBlur = 7; g.shadowOffsetY = 2;
+        const fill = g.createRadialGradient(-wide * 0.15, -len * 0.1, 1, 0, 0, len * 0.62);
+        fill.addColorStop(0, '#ffffff'); fill.addColorStop(0.6, '#f6f7fc'); fill.addColorStop(1, '#d9deee');
+        g.fillStyle = fill; g.fill();
+        g.shadowColor = 'transparent';
+        g.strokeStyle = 'rgba(190, 198, 222, .55)'; g.lineWidth = 0.8;
+        g.beginPath(); g.moveTo(0, -len * 0.42); g.quadraticCurveTo(wide * curl * 0.6, 0, 0, len * 0.42); g.stroke();   // the petal's crease
+        g.restore();
+      }
+    }
+  }
+  /*PETAL-END*/
+  /*HEART-START*/
+  // Little hearts: one seamless tile of small pink hearts in a few shades, each with a soft glow and a highlight.
+  function paintHearts(cv, seed, count) {
+    const g = cv.getContext('2d'), T = cv.width, shades = ['#ff8fc4', '#ff5fa8', '#ffc2df', '#f43f93', '#ffe3f0'];
+    let sd = seed;
+    const rnd = () => { sd = (sd * 16807) % 2147483647; return sd / 2147483647; };
+    for (let i = 0; i < count; i++) {
+      const x = rnd() * T, y = rnd() * T, sz = 15 + Math.pow(rnd(), 1.6) * 26, tilt = (rnd() - 0.5) * 0.7, shade = shades[Math.floor(rnd() * shades.length)], a = 0.6 + rnd() * 0.4;
+      for (const dx of [-T, 0, T]) for (const dy of [-T, 0, T]) {
+        const px = x + dx, py = y + dy;
+        if (px < -sz || px > T + sz || py < -sz || py > T + sz) continue;
+        g.save();
+        g.translate(px, py); g.rotate(tilt);
+        g.beginPath();
+        g.moveTo(0, -0.25 * sz);
+        g.bezierCurveTo(-0.1 * sz, -0.56 * sz, -0.62 * sz, -0.5 * sz, -0.5 * sz, -0.08 * sz);
+        g.bezierCurveTo(-0.42 * sz, 0.16 * sz, -0.14 * sz, 0.3 * sz, 0, 0.5 * sz);
+        g.bezierCurveTo(0.14 * sz, 0.3 * sz, 0.42 * sz, 0.16 * sz, 0.5 * sz, -0.08 * sz);
+        g.bezierCurveTo(0.62 * sz, -0.5 * sz, 0.1 * sz, -0.56 * sz, 0, -0.25 * sz);
+        g.globalAlpha = a;
+        g.shadowColor = shade; g.shadowBlur = sz * 0.5;
+        g.fillStyle = shade; g.fill();
+        g.shadowColor = 'transparent';
+        g.globalAlpha = a * 0.55; g.fillStyle = '#ffffff';
+        g.beginPath(); g.ellipse(-0.24 * sz, -0.2 * sz, 0.1 * sz, 0.07 * sz, -0.6, 0, 6.2832); g.fill();   // highlight
+        g.restore();
+      }
+    }
+  }
+  /*HEART-END*/
+  // Drifting layers of small pictures. speed: card widths per second, across and down (negative is up).
+  function driftLayers(paint, seed, count, specs) {
+    const cv = document.createElement('canvas');
+    cv.width = cv.height = 512;
+    paint(cv, seed, count);
+    return specs.map((o, i) => {
+      const tex = new THREE.CanvasTexture(cv);
+      tex.encoding = THREE.sRGBEncoding;
+      tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(o.repeat, o.repeat);
+      tex.rotation = o.turn || 0;
+      tex.offset.set(i * 0.37, i * 0.61);
+      tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+      return { tex, speed: o.speed, material: overlayMaterial({ map: tex, opacity: o.opacity }, i + 3) };
+    });
+  }
+  const drifts = {
+    // White petals falling with a slight sideways drift.
+    petals: driftLayers(paintPetals, 733, 34, [{ repeat: 1.25, speed: [0.01, 0.028], turn: 0.4, opacity: 0.75 }, { repeat: 0.72, speed: [-0.014, 0.05], turn: 2.1, opacity: 1 }]),
+    // Pink hearts floating gently upward.
+    hearts: driftLayers(paintHearts, 919, 30, [{ repeat: 1.3, speed: [0.006, -0.02], opacity: 0.55 }, { repeat: 0.8, speed: [-0.009, -0.036], opacity: 0.95 }])
+  };
+  // Midnight-blue clouds: soft seamless patches that drift across the black sky while their strength rises and falls,
+  // so the panel moves between black and midnight blue instead of sitting at one flat colour.
+  const cloudCanvas = document.createElement('canvas');
+  cloudCanvas.width = cloudCanvas.height = 256;
+  {
+    const g = cloudCanvas.getContext('2d');
+    let seed = 9173;
+    const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+    for (let i = 0; i < 16; i++) {
+      const x = rnd() * 256, y = rnd() * 256, r = 45 + rnd() * 75, a = 0.35 + rnd() * 0.45;
+      for (const dx of [-256, 0, 256]) for (const dy of [-256, 0, 256]) {
+        const px = x + dx, py = y + dy;
+        if (px < -r || px > 256 + r || py < -r || py > 256 + r) continue;
+        const blob = g.createRadialGradient(px, py, 0, px, py, r);
+        blob.addColorStop(0, `rgba(255, 255, 255, ${a})`); blob.addColorStop(1, 'rgba(255, 255, 255, 0)');
+        g.fillStyle = blob; g.fillRect(px - r, py - r, 2 * r, 2 * r);
+      }
+    }
+  }
+  const cloud = { tex: new THREE.CanvasTexture(cloudCanvas) };
+  cloud.tex.encoding = THREE.sRGBEncoding;
+  cloud.tex.wrapS = cloud.tex.wrapT = THREE.RepeatWrapping;
+  cloud.tex.repeat.set(0.7, 0.7);
+  // The cloud picture is white; each sky colour gets its own tinted material, made once and shared.
+  cloud.materials = {};
+  cloud.material = rgb => cloud.materials[rgb] || (cloud.materials[rgb] = overlayMaterial({ map: cloud.tex, opacity: 0.7, color: new THREE.Color(`rgb(${rgb})`) }, 2));
+  // The cloud and star layers are cut to the same rounded panel as the sky.
+  const panelHalf = { x: CW / 2 - CW * INSET / TW, y: CH / 2 - CH * INSET / TH };
+  const starGeo = new THREE.ShapeGeometry(roundedShape(panelHalf.x, panelHalf.y, CW * 16 / TW), 6);
+  function skyMaterial(n) {
+    const tex = skyTexture(n);
+    tex.repeat.set(1 / (2 * panelHalf.x), 1 / (2 * panelHalf.y));   // the panel's own coordinates, stretched to cover the picture once
+    tex.offset.set(0.5, 0.5);
+    return overlayMaterial({ map: tex, transparent: false }, 1);
+  }
+
+  // Emblems: a flat picture floating above the stars, drawn in its own colours with no lighting.
+  const emblemGeo = new THREE.PlaneGeometry(CW * EMBLEM.size / TW, CW * EMBLEM.size / TW);
+  const emblemZ = (EMBLEM.y - TH / 2) / TH * CH;
+  const emblemLoader = new THREE.TextureLoader();
+  // Each emblem has three pictures: sharp, smeared through a short arc, and smeared through a full turn.
+  // Fading from one to the next as it speeds up is what makes a fast spin read as a blur.
+  function smeared(img, arc, steps) {
+    const cv = document.createElement('canvas');
+    cv.width = cv.height = 512;
+    const g = cv.getContext('2d');
+    g.globalCompositeOperation = 'lighter';
+    g.globalAlpha = 1 / steps;
+    for (let i = 0; i < steps; i++) {
+      g.setTransform(1, 0, 0, 1, 256, 256);
+      g.rotate((i / steps - 0.5) * arc);
+      g.drawImage(img, -256, -256, 512, 512);
+    }
+    const tex = new THREE.CanvasTexture(cv);
+    tex.encoding = THREE.sRGBEncoding;
+    return tex;
+  }
+  function emblemSet(url) {
+    const set = { maps: null, groups: [] };
+    const apply = group => ['sharp', 'arc', 'full'].forEach(k => { group[k].map = set.maps[k]; group[k].visible = true; group[k].needsUpdate = true; });
+    loadImage(url, img => {
+      const sharp = new THREE.Texture(img);
+      sharp.encoding = THREE.sRGBEncoding;
+      sharp.anisotropy = renderer.capabilities.getMaxAnisotropy();
+      sharp.needsUpdate = true;
+      set.maps = { sharp, arc: smeared(img, 0.55, 30), full: smeared(img, Math.PI * 2, 64) };
+      set.groups.forEach(apply);
+    });
+    // One group of three materials per card, so each card fades between its pictures on its own.
+    set.materials = () => {
+      const group = { sharp: overlayMaterial({ visible: false }, 6), arc: overlayMaterial({ visible: false, opacity: 0 }, 6), full: overlayMaterial({ visible: false, opacity: 0 }, 6) };
+      set.groups.push(group);
+      if (set.maps) apply(group);
+      return group;
+    };
+    return set;
+  }
+  /*FIRE-START*/
+  // A ring of flame tongues sweeping outward from the emblem's rim. Two different rings turn against each other
+  // and flicker, which is what makes it read as fire and not a pattern.
+  function paintFire(cv, seed, rim, colors) {
+    const g = cv.getContext('2d'), c = cv.width / 2;
+    let sd = seed;
+    const rnd = () => { sd = (sd * 16807) % 2147483647; return sd / 2147483647; };
+    g.globalCompositeOperation = 'lighter';
+    const tongues = 34;
+    for (let i = 0; i < tongues; i++) {
+      const th = (i + rnd() * 0.8) / tongues * 6.2832, len = (0.24 + rnd() * 0.3) * c, w = (0.04 + rnd() * 0.05) * c, swirl = 0.35 + rnd() * 0.6;
+      for (let t = 0; t <= 1; t += 0.045) {
+        const r = rim * 0.86 + t * len, a = th + t * swirl, x = c + Math.cos(a) * r, y = c + Math.sin(a) * r, br = w * Math.pow(1 - t, 0.6) + 2.5;
+        const col = t < 0.2 ? colors.core : t < 0.6 ? colors.mid : colors.tip;
+        const grad = g.createRadialGradient(x, y, 0, x, y, br);
+        grad.addColorStop(0, `rgba(${col}, ${(0.11 * (1 - t) + 0.035).toFixed(3)})`); grad.addColorStop(1, `rgba(${col}, 0)`);
+        g.fillStyle = grad; g.fillRect(x - br, y - br, 2 * br, 2 * br);
+      }
+    }
+  }
+  /*FIRE-END*/
+  // Two flame rings per set of fire colours, painted once and shared by every card that burns that colour.
+  const fireSets = {};
+  function fireTextures(colors) {
+    const key = [colors.core, colors.mid, colors.tip].join('|');
+    if (!fireSets[key]) {
+      fireSets[key] = [29, 71].map(seed => {
+        const cv = document.createElement('canvas');
+        cv.width = cv.height = 512;
+        paintFire(cv, seed, (EMBLEM.size / TW * CW / 2) / (CW * FIRE.size) * 512, colors);
+        const tex = new THREE.CanvasTexture(cv);
+        tex.encoding = THREE.sRGBEncoding;
+        return tex;
+      });
+    }
+    return fireSets[key];
+  }
+  const fireGeo = new THREE.PlaneGeometry(CW * FIRE.size, CW * FIRE.size);
+  const smooth = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+  // Video pictures: one shared video per card number, filling the card's panel. It shows a still until asked to play.
+  const videos = {};
+  function videoBackdrop(n) {
+    const f = CARD_FACES[n];
+    const fitPanel = tex => {
+      tex.encoding = THREE.sRGBEncoding;
+      tex.repeat.set(1 / (2 * panelHalf.x), 1 / (2 * panelHalf.y));
+      tex.offset.set(0.5, 0.5);
+      return tex;
+    };
+    const material = overlayMaterial({ transparent: false, visible: false }, 1);
+    const el = document.createElement('video');
+    el.muted = true; el.loop = true; el.playsInline = true; el.preload = 'auto';
+    el.setAttribute('muted', ''); el.setAttribute('playsinline', '');
+    el.src = f.video;
+    const film = fitPanel(new THREE.VideoTexture(el));
+    const v = { material, wanted: false, playing: false, holdUntil: 0,
+      play() {
+        if (v.playing) return;
+        v.playing = true;
+        const started = el.play();
+        if (started && started.catch) started.catch(() => { v.playing = false; });
+      },
+      pause() { v.playing = false; el.pause(); }
+    };
+    // Switch from the still to the film only once the film really has a frame to show.
+    el.addEventListener('playing', () => { material.map = film; material.visible = true; material.needsUpdate = true; });
+    if (f.poster) {
+      emblemLoader.load(f.poster, tex => {
+        if (material.map) return;
+        material.map = fitPanel(tex); material.visible = true; material.needsUpdate = true;
+      }, undefined, () => console.warn('Video still did not load:', f.poster));
+    }
+    return v;
+  }
+  // Flash: a burst of white light over the emblem when a trio is completed.
+  const flareCanvas = document.createElement('canvas');
+  flareCanvas.width = flareCanvas.height = 128;
+  {
+    const g = flareCanvas.getContext('2d'), grad = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+    grad.addColorStop(0, 'rgba(255,255,255,1)'); grad.addColorStop(0.4, 'rgba(255,255,255,.55)'); grad.addColorStop(1, 'rgba(255,255,255,0)');
+    g.fillStyle = grad; g.fillRect(0, 0, 128, 128);
+  }
+  const flareTex = new THREE.CanvasTexture(flareCanvas);
+  const flareGeo = new THREE.PlaneGeometry(CW * 1.2, CW * 1.2);
+  const cardRoot = new THREE.Group();
+  scene.add(cardRoot);
+  const cards = [];
+  for (let n = 1; n <= 12; n++) {
+    faces[n] = makeTexture();
+    const faceMat = cardMaterial(faces[n].tex);
+    const emblemMat = CARD_FACES[n].emblem ? emblemSet(CARD_FACES[n].emblem) : null;
+    if (CARD_FACES[n].video) videos[n] = videoBackdrop(n);
+    let skyMat = null, textMat = null;
+    if (videos[n]) {
+      texts[n] = makeTexture();
+      textMat = overlayMaterial({ map: texts[n].tex }, 6);
+    }
+    if (emblemMat) {
+      texts[n] = makeTexture();
+      skyMat = skyMaterial(n);
+      textMat = overlayMaterial({ map: texts[n].tex }, 8);
+    }
+    for (let k = 0; k < 3; k++) {
+      const id = (n - 1) * 3 + k;
+      const pivot = new THREE.Group();
+      pivot.userData.id = id;
+      const body = new THREE.Group();
+      const face = new THREE.Mesh(cardGeo, faceMat);
+      face.rotation.x = -Math.PI / 2;   // lies flat, printed side up, top of the card pointing away from you
+      face.position.y = 0.008;
+      face.castShadow = true;
+      const rear = new THREE.Mesh(cardGeo, backMat);
+      rear.rotation.x = Math.PI / 2;    // lies flat, pattern side down
+      rear.position.y = -0.008;
+      rear.castShadow = true;
+      body.add(face);
+      body.add(rear);
+      const halo = new THREE.Mesh(haloGeo, haloMat);
+      halo.rotation.x = -Math.PI / 2;
+      halo.position.y = 0.026;
+      halo.raycast = () => {};
+      halo.visible = false;
+      pivot.add(body);
+      pivot.add(halo);
+      cardRoot.add(pivot);
+      let emblem = null, flare = null, blur = null, fire = null, ember = null;
+      if (emblemMat) {
+        // Behind the emblem: the sky, then either a drifting layer (petals, hearts) or clouds and stars.
+        const flames = Object.assign({}, FIRE, CARD_FACES[n].fire);
+        body.add(overlayMesh(starGeo, skyMat, 1));
+        const look = Object.assign({}, CARD_SKY, CARD_FACES[n].sky), drift = drifts[CARD_FACES[n].backdrop];
+        if (drift) {
+          if (look.cloud !== CARD_SKY.cloud) body.add(overlayMesh(starGeo, cloud.material(look.cloud), 2));   // a sky with its own cloud colour keeps its clouds
+          drift.forEach((layer, i) => body.add(overlayMesh(starGeo, layer.material, i + 3)));
+        } else {
+          body.add(overlayMesh(starGeo, cloud.material(look.cloud), 2));
+          starSet(look.starTint).forEach((material, i) => body.add(overlayMesh(starGeo, material, i + 3)));
+        }
+        // Above that: an ember glow, the emblem (three pictures), the fire, the lettering, the trio flash.
+        const glowing = (geo, map, order, color) => {
+          const m = overlayMesh(geo, overlayMaterial({ map, opacity: 0, blending: THREE.AdditiveBlending, color: color || 0xffffff }, order), order, emblemZ);
+          m.visible = false;
+          body.add(m);
+          return m;
+        };
+        ember = glowing(flareGeo, flareTex, 5, flames.ember);
+        const pics = emblemMat.materials();
+        emblem = overlayMesh(emblemGeo, pics.sharp, 6, emblemZ);
+        blur = [overlayMesh(emblemGeo, pics.arc, 6, emblemZ), overlayMesh(emblemGeo, pics.full, 6, emblemZ)];
+        body.add(emblem);
+        blur.forEach(m => body.add(m));
+        fire = fireTextures(flames).map(tex => glowing(fireGeo, tex, 7));
+        body.add(overlayMesh(cardGeo, textMat, 8));
+        flare = glowing(flareGeo, flareTex, 9);
+      } else if (videos[n]) {
+        body.add(overlayMesh(starGeo, videos[n].material, 1));
+        body.add(overlayMesh(cardGeo, textMat, 6));
+        flare = overlayMesh(flareGeo, overlayMaterial({ map: flareTex, opacity: 0, blending: THREE.AdditiveBlending }, 7), 7, emblemZ);
+        flare.visible = false;
+        body.add(flare);
+      }
+      cards[id] = { pivot, body, halo, playable: false, emblem, blur, fire, ember, rev: 0, flare, video: videos[n] || null, spin: 0, spinTarget: 0, flash: 0, flashed: false, meshes: [face, rear], y: 0, target: null };
+    }
+  }
+
+  // Seats for the computer players, in turn order (clockwise from you: left, far side, right).
+  function seatsFor(k) {
+    const far = x => ({ x, z: -5, row: true });
+    const side = (s, z) => ({ x: s * 7.6, z, row: false, side: s });
+    if (k === 2) return [far(-4.6), far(4.6)];
+    if (k === 3) return [side(-1, -0.5), far(0), side(1, -0.5)];
+    if (k === 4) return [side(-1, 0.3), far(-3.6), far(3.6), side(1, 0.3)];
+    return [side(-1, 0.8), far(-5.2), far(0), far(5.2), side(1, 0.8)];
+  }
+  let seats = [], seatLabels = [];
+  const tagPool = [];
+
+  function pileBase(p) {
+    if (p === 0) return { x: 4.6, z: 3.6, dx: 1, dz: 0 };
+    const seat = seats[p - 1];
+    return seat.row ? { x: seat.x - 1.5, z: -6.65, dx: 1, dz: 0 } : { x: seat.side * 9.2, z: seat.z - 1.5, dx: 0, dz: 1 };
+  }
+
+  const yawCache = {};
+  const yawQ = yaw => yawCache[yaw] || (yawCache[yaw] = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, yaw, 0)));
+  const tiltQ = new THREE.Quaternion().setFromEuler(new THREE.Euler(Math.PI / 2, 0, 0)); // stands a card up to face the camera
+  const rollAxis = new THREE.Vector3(0, 0, 1);
+
+  // A card held in your hand: fanned along the bottom of the view, a fixed distance in front of the camera.
+  function heldTarget(i, n) {
+    const visH = 2 * HAND.dist * Math.tan(camera.fov * Math.PI / 360), visW = visH * camera.aspect;
+    const span = Math.min(0.62 * (n - 1), Math.max(0, visW * 0.86 - CW * HAND.size));
+    const x = n > 1 ? (i - (n - 1) / 2) * span / (n - 1) : 0;
+    const pos = camera.localToWorld(new THREE.Vector3(x, -visH / 2 + CH * HAND.size / 2 + HAND.raise - x * x * 0.045, -HAND.dist + i * 0.012));
+    const quat = camera.quaternion.clone()
+      .multiply(new THREE.Quaternion().setFromAxisAngle(rollAxis, -x * 0.085))
+      .multiply(tiltQ);
+    return { x: pos.x, y: pos.y, z: pos.z, quat, face: true, s: HAND.size, held: true };
+  }
+
+  // Where every card should be, given the game state.
+  function layout() {
+    const mid = S.middle.length, cols = Math.ceil(mid / 2);
+    S.middle.forEach((c, i) => {
+      if (!c) return;
+      const r = Math.floor(i / cols), inRow = r === 0 ? cols : mid - cols;
+      cards[c.id].target = { x: ((i % cols) - (inRow - 1) / 2) * 1.2, y: 0, z: -1.1 + r * 1.6, yaw: 0, face: c.up, s: 1 };
+    });
+    const me = S.players[0];
+    const held = me.hand.filter(c => !c.up), shown = me.hand.filter(c => c.up);
+    held.forEach((c, i) => { cards[c.id].target = heldTarget(i, held.length); });
+    // Cards you have revealed are laid on the table in front of you until the turn ends.
+    shown.forEach((c, i) => {
+      cards[c.id].target = { x: (i - (shown.length - 1) / 2) * 1.2, y: 0, z: 2.75, yaw: 0, face: true, s: 1 };
+    });
+    seats.forEach((seat, k) => {
+      const hand = S.players[k + 1].hand;
+      hand.forEach((c, i) => {
+        const off = (i - (hand.length - 1) / 2) * 0.8;
+        cards[c.id].target = seat.row
+          ? { x: seat.x + off, y: c.up ? 0.5 : 0, z: seat.z, yaw: 0, face: c.up, s: c.up ? 0.92 : 0.7 }
+          : { x: seat.x, y: c.up ? 0.5 : 0, z: seat.z + off, yaw: c.up ? 0 : Math.PI / 2, face: c.up, s: c.up ? 0.92 : 0.7 };
+      });
+    });
+    S.players.forEach((pl, p) => {
+      const base = pileBase(p), step = Math.min(0.95, 3 / Math.max(1, pl.trios.length - 1));
+      pl.trios.forEach((n, i) => {
+        for (let k = 0; k < 3; k++) {
+          cards[(n - 1) * 3 + k].target = {
+            x: base.x + base.dx * i * step + (k - 1) * 0.13, y: 0.02 + k * 0.04,
+            z: base.z + base.dz * i * step, yaw: (1 - k) * 0.12, face: true, s: 0.55
+          };
+        }
+      });
+    });
+    cards.forEach(c => {
+      const t = c.target;
+      if (!t) return;
+      if (!t.quat) t.quat = yawQ(t.yaw);
+      c.meshes.forEach(m => { m.castShadow = !t.held; });
+    });
+  }
+
+  function buildLabels() {
+    labels.textContent = '';
+    tagPool.length = 0;
+    seatLabels = S.players.map((pl, p) => {
+      const el = document.createElement('div');
+      el.className = 'seat';
+      labels.appendChild(el);
+      let pos;
+      if (p === 0) pos = new THREE.Vector3(-5.4, 0, 3.6);
+      else {
+        const seat = seats[p - 1], half = (DEAL[S.players.length][0] - 1) / 2 * 0.8;
+        pos = seat.row ? new THREE.Vector3(seat.x, 0, -3.55) : new THREE.Vector3(seat.x, 0, seat.z - half - 1.05);
+      }
+      return { el, pos };
+    });
+  }
+
+  function updateLabels() {
+    const over = S.winner !== null;
+    S.players.forEach((pl, p) => {
+      const el = seatLabels[p].el;
+      el.className = 'seat' + (S.current === p && !over ? ' turn' : '');
+      el.textContent = pl.name;
+      pl.trios.forEach(n => {
+        const chip = document.createElement('span');
+        chip.className = 'chip';
+        chip.style.background = CARD_FACES[n].color;
+        chip.textContent = CARD_FACES[n].label;
+        el.appendChild(chip);
+      });
+    });
+    // "low" / "high" tags on the hand cards you can pick
+    const handOpts = OPTS.filter(o => o.where === 'hand');
+    while (tagPool.length < handOpts.length) {
+      const el = document.createElement('div');
+      el.className = 'endtag';
+      labels.appendChild(el);
+      tagPool.push({ el, id: -1, dx: 0, dz: 0, held: false });
+    }
+    tagPool.forEach((t, i) => {
+      const o = handOpts[i];
+      t.el.style.display = o ? '' : 'none';
+      if (!o) { t.id = -1; return; }
+      t.el.textContent = o.end;
+      t.id = o.card.id;
+      const seat = o.p === 0 ? null : seats[o.p - 1];
+      t.held = !seat;
+      t.dx = seat && !seat.row ? -seat.side * 0.95 : 0;
+      t.dz = seat && seat.row ? 0.72 : 0;
+    });
+    cards.forEach((c, id) => { c.playable = OPTS.some(o => o.card.id === id); c.halo.visible = c.playable && !highlight.lift; });
+  }
+
+  // Camera: fixed angle. The table sits in the upper part of the view, leaving the bottom for your held cards.
+  const look = new THREE.Vector3(), dir = new THREE.Vector3(0, 1, 0.72).normalize(), probe = new THREE.Vector3();
+  const camUp = new THREE.Vector3(), hoverPush = new THREE.Vector3();
+  let vw = 1, vh = 1;
+  function aim(lookZ, d) {
+    look.set(0, 0, lookZ);
+    camera.position.copy(look).addScaledVector(dir, d);
+    camera.lookAt(look);
+    camera.updateProjectionMatrix();
+    camera.updateMatrixWorld(true);
+  }
+  function fit() {
+    vw = Math.max(1, stage.clientWidth); vh = Math.max(1, stage.clientHeight);
+    renderer.setSize(vw, vh, false);
+    camera.aspect = vw / vh;
+    const corners = [[-EDGE.x, EDGE.zFar - 0.4], [EDGE.x, EDGE.zFar - 0.4], [-EDGE.x, EDGE.zNear + 0.3], [EDGE.x, EDGE.zNear + 0.3]];
+    const fits = () => corners.every(([x, z]) => {
+      probe.set(x, 0, z).project(camera);
+      return Math.abs(probe.x) < 0.98 && probe.y < 0.96 && probe.y > -0.3;
+    });
+    let best = { lookZ: 4, d: 90 };
+    for (let lookZ = 0; lookZ <= 14; lookZ += 0.5) {
+      for (let d = 10; d < best.d; d += 0.5) {
+        aim(lookZ, d);
+        if (fits()) { best = { lookZ, d }; break; }
+      }
+    }
+    aim(best.lookZ, best.d);
+    camUp.set(0, 1, 0).applyQuaternion(camera.quaternion);
+    // A hovered held card moves up and toward you.
+    hoverPush.set(0, 0.42, 0.55).applyQuaternion(camera.quaternion);
+    if (S) layout();
+  }
+  function place(el, x, y, z) {
+    probe.set(x, y, z).project(camera);
+    el.style.transform = `translate(-50%, -50%) translate(${((probe.x + 1) / 2 * vw).toFixed(1)}px, ${((1 - probe.y) / 2 * vh).toFixed(1)}px)`;
+  }
+
+  // Picking: the nearest card under the pointer that you can either play or look at (your own held cards).
+  const ray = new THREE.Raycaster(), mouse = new THREE.Vector2();
+  let hoverId = -1;
+  function pick(ev) {
+    if (!S) return -1;
+    const r = canvas.getBoundingClientRect();
+    mouse.set(((ev.clientX - r.left) / r.width) * 2 - 1, -((ev.clientY - r.top) / r.height) * 2 + 1);
+    ray.setFromCamera(mouse, camera);
+    for (const hit of ray.intersectObjects(cardRoot.children, true)) {
+      let o = hit.object;
+      while (o && o.userData.id === undefined) o = o.parent;
+      if (!o) continue;
+      const id = o.userData.id, t = cards[id].target;
+      if ((t && (t.held || (t.face && cards[id].emblem))) || OPTS.some(x => x.card.id === id)) return id;
+    }
+    return -1;
+  }
+  const optionFor = id => OPTS.find(x => x.card.id === id);
+  const cursor = $('cursor');
+  canvas.addEventListener('pointermove', ev => {
+    hoverId = pick(ev);
+    if (ev.pointerType !== 'mouse') { stage.classList.remove('fine'); cursor.className = ''; return; }
+    stage.classList.add('fine');
+    const r = stage.getBoundingClientRect();
+    cursor.style.transform = `translate(${(ev.clientX - r.left).toFixed(1)}px, ${(ev.clientY - r.top).toFixed(1)}px)`;
+    const c = hoverId >= 0 ? cards[hoverId] : null;
+    const onEmblem = !!(c && c.emblem && c.target && c.target.face);
+    if (onEmblem) cursor.style.setProperty('--cursor-glow', CARD_FACES[Math.floor(hoverId / 3) + 1].glow || '#9fd4ff');
+    cursor.className = 'on' + (c ? ' over' : '') + (onEmblem ? ' glow' : '');
+  });
+  canvas.addEventListener('pointerleave', () => { hoverId = -1; cursor.className = ''; });
+  canvas.addEventListener('click', ev => {
+    const o = optionFor(pick(ev));
+    if (o) { hoverId = -1; play(o); }
+  });
+
+  // Animation: every card eases toward its target; a flip lifts the card clear of the table.
+  let last = performance.now();
+  function frame(now) {
+    requestAnimationFrame(frame);
+    const dt = Math.min(0.05, Math.max(0, (now - last) / 1000));
+    last = now;
+    const k = reduceMotion ? 1 : 1 - Math.exp(-dt * 9);
+    cards.forEach((c, id) => {
+      const t = c.target;
+      if (!t) return;
+      const p = c.pivot;
+      const hov = id === hoverId, grow = hov && t.held, rise = highlight.lift && c.playable ? 0.3 : 0;
+      // rise: with the lift-only highlight, playable cards float a little (held cards move up the screen and toward you).
+      const push = grow ? 1 : t.held ? rise : 0;
+      p.position.x += (t.x + hoverPush.x * push - p.position.x) * k;
+      p.position.z += (t.z + hoverPush.z * push - p.position.z) * k;
+      c.y += (t.y + (t.held ? hoverPush.y * push : (hov ? 0.18 : 0) + rise * 0.5) - c.y) * k;
+      p.position.y = c.y;
+      p.quaternion.slerp(t.quat, k);
+      const s = p.scale.x + (t.s * (grow ? HAND.grow : 1) - p.scale.x) * k;
+      p.scale.set(s, s, s);
+      c.body.rotation.z += ((t.face ? 0 : Math.PI) - c.body.rotation.z) * k;
+      c.body.position.y = 0.03 + Math.sin(c.body.rotation.z) * 0.7;
+      if (c.flare) {
+        if (c.flash > 0) c.flash = Math.max(0, c.flash - dt / 0.85);
+        c.flare.visible = c.flash > 0;
+        c.flare.material.opacity = c.flash * c.flash;
+      }
+      if (c.emblem) {
+        // The emblem winds up under the pointer or as one of a revealed pair, and runs down otherwise
+        // (after a trio's flash, for instance).
+        const paired = c.spinTarget === 1;
+        const winding = ((hov && t.face) || paired) && !reduceMotion;
+        c.rev = Math.min(1, Math.max(0, c.rev + (winding ? dt / (paired ? SPIN.pairWindUp : SPIN.windUp) : -dt / SPIN.runDown)));
+        const speed = Math.pow(c.rev, 2.2) * SPIN.top * 6.2832;   // radians per second
+        if (speed > 0.01 && !reduceMotion) c.emblem.rotation.z -= speed * dt;
+        // Sharp picture, then a short smear, then a full blur as it gets faster.
+        const smear = smooth(0.3, 0.6, c.rev), ring = smooth(0.6, 0.92, c.rev), heat = smooth(0.3, 1, c.rev);
+        const bump = 1 + 0.24 * c.flash;
+        c.emblem.material.opacity = 1 - smear;
+        c.emblem.scale.set(bump, bump, 1);
+        c.blur[0].material.opacity = smear * (1 - ring);
+        c.blur[1].material.opacity = ring;
+        c.blur.forEach(m => { m.rotation.z = c.emblem.rotation.z; m.scale.set(bump, bump, 1); });
+        // Blue fire grows with the speed: a glow under the emblem and two rings of flame turning against each other.
+        const lit = heat > 0.004;
+        c.ember.visible = lit;
+        c.ember.material.opacity = heat * 0.6;
+        c.fire.forEach((f, i) => {
+          f.visible = lit;
+          if (!lit) return;
+          f.rotation.z += dt * (i ? -1 : 1) * (1.6 + 4.5 * heat);
+          const size = (0.7 + 0.32 * heat) * (1 + 0.05 * Math.sin(now / (110 + i * 37) + id + i * 2));
+          f.scale.set(size, size, 1);
+          f.material.opacity = heat * (i ? 0.7 : 0.9) * (0.8 + 0.2 * Math.sin(now / (60 + i * 23) + id * 1.3));
+        });
+      }
+    });
+    seatLabels.forEach(l => place(l.el, l.pos.x, l.pos.y, l.pos.z));
+    tagPool.forEach(t => {
+      if (t.id < 0) return;
+      const p = cards[t.id].pivot.position, lift = t.held ? 0.78 * cards[t.id].pivot.scale.x : 0;
+      place(t.el, p.x + t.dx + camUp.x * lift, p.y + camUp.y * lift, p.z + t.dz + camUp.z * lift);
+    });
+    if (!reduceMotion) {
+      starLayers.forEach((layer, i) => {
+        layer.tex.offset.x = (layer.tex.offset.x + dt * layer.speed[0]) % 1;
+        layer.tex.offset.y = (layer.tex.offset.y + dt * layer.speed[1]) % 1;
+        if (i) for (const tint in starSets) starSets[tint][i].opacity = 0.7 + 0.2 * Math.sin(now / 1100);   // the nearer stars twinkle
+      });
+      for (const kind in drifts) drifts[kind].forEach(layer => {
+        layer.tex.offset.x = (layer.tex.offset.x + 1 + dt * layer.speed[0]) % 1;
+        layer.tex.offset.y = (layer.tex.offset.y + 1 + dt * layer.speed[1]) % 1;
+      });
+      cloud.tex.offset.x = (cloud.tex.offset.x + dt * 0.012) % 1;
+      cloud.tex.offset.y = (cloud.tex.offset.y + 1 - dt * 0.007) % 1;
+      const swell = 0.5 + 0.5 * Math.sin(now / 1000 * 6.2832 / CARD_SKY.cloudPeriod);   // dark at the low point, full colour at the high
+      for (const rgb in cloud.materials) cloud.materials[rgb].opacity = swell;
+    }
+    // A video stops once its cards are no longer a matching pair, a few seconds later if they made a trio.
+    for (const n in videos) { const v = videos[n]; if (v.playing && !v.wanted && now > v.holdUntil) v.pause(); }
+    renderer.render(scene, camera);
+  }
+
+  // Emblems wind up to a blur and catch fire on the cards of a matching pair, and flash when the third card completes the trio.
+  function updateSpin() {
+    const rev = S.revealed, matching = rev.length >= 2 && S.pending !== 'miss';
+    for (const n in videos) videos[n].wanted = false;
+    cards.forEach((c, id) => {
+      if (!c.flare) return;
+      const inPlay = matching && rev.includes(id);
+      if (inPlay && S.pending === 'trio') {
+        if (!c.flashed) {
+          c.flashed = true; c.flash = 1;
+          if (c.emblem && !reduceMotion) c.rev = Math.max(c.rev, 0.8);   // the trio flashes at speed, then runs down
+          if (c.video) c.video.holdUntil = performance.now() + 4500;
+        }
+        c.spinTarget = 0;
+      } else {
+        c.spinTarget = inPlay ? 1 : 0;
+        if (!inPlay) c.flashed = false;
+      }
+      if (c.video && inPlay) c.video.wanted = true;
+    });
+    // Videos play on the cards of a matching pair (not for anyone who has asked for reduced motion).
+    if (!reduceMotion) for (const n in videos) if (videos[n].wanted) videos[n].play();
+  }
+
+  fit();
+  if (window.ResizeObserver) new ResizeObserver(fit).observe(stage);
+  else window.addEventListener('resize', fit);
+  requestAnimationFrame(frame);
+
+  return {
+    // New deal: gather the deck in the centre, face down, then let it fly out to the seats.
+    reset() {
+      seats = seatsFor(S.players.length - 1);
+      paintAllFaces();
+      buildLabels();
+      cards.forEach((c, id) => {
+        c.pivot.position.set(0, 0, 0.3);
+        c.pivot.quaternion.set(0, 0, 0, 1);
+        c.pivot.scale.set(1, 1, 1);
+        c.body.rotation.z = Math.PI;
+        c.y = id * 0.012;
+        c.target = null;
+      });
+    },
+    sync() { layout(); updateLabels(); updateSpin(); },
+    repaint() { paintBack(); paintAllFaces(); },
+    setHighlight(name) {
+      highlight = HIGHLIGHTS[name];
+      haloMat.map = haloTextures[name];
+      haloMat.needsUpdate = true;
+      cards.forEach(c => { c.halo.visible = c.playable && !highlight.lift; });
+    },
+    canvases: () => [back.cv].concat(Object.keys(faces).map(n => faces[n].cv)),
+    textCanvases: () => texts
+  };
+}
+
+/* ---------- Boot ---------- */
+function start(data) {
+  try {
+    if (!window.THREE) throw new Error('3D library did not load');
+    View = makeView();
+  } catch (err) {
+    View = null;
+    $('fail').style.display = 'flex';
+    $('moves').classList.add('open');
+    console.error(err);
+  }
+  let savedFont = null;
+  try { savedFont = localStorage.getItem('threefold-card-font'); } catch (e) { /* storage may be unavailable */ }
+  if (!CARD_FONTS.includes(savedFont)) savedFont = CARD_FONTS[0];
+  $('opt-font').value = savedFont;
+  useFont(savedFont);
+  loadSettings();
+  if (data && data.state && data.state.players) {
+    // Picking up a game that was already under way. Games from before the difficulty names changed are translated.
+    S = data.state;
+    if (S.v !== 2) S.level = ({ beginner: 'normal', easy: 'hard', normal: 'expert', hard: 'master' })[S.level] || 'normal';
+    S.v = 2;
+    Object.assign(SETTINGS, { players: S.players.length, mode: S.mode, level: S.level });
+    gameStarted = true;
+    menuOpen = false;
+    $('menu').hidden = true;
+    if (View) View.reset();
+    tick();
+  } else {
+    // First visit: deal a table to sit behind the menu, and wait for a choice.
+    S = newGame(SETTINGS.players, SETTINGS.mode, SETTINGS.level, Math.random);
+    if (View) View.reset();
+    showMenu('home');
+  }
+}
+window.claude?.hot?.snapshot?.(() => (gameStarted ? { state: S } : {}));
+if (window.claude?.hot?.ready) window.claude.hot.ready(start); else start(window.claude?.hot?.data ?? {});
+</script>
+</body>
+</html>
