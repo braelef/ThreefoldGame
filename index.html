@@ -309,17 +309,24 @@ Object.assign(CARD_FACES[3], { name: 'Heart Chakra', color: '#c4467f', emblem: '
 Object.assign(CARD_FACES[4], { name: 'Root Chakra', color: '#93a1b8', emblem: 'assets/root.webp', glow: '#ffffff', backdrop: 'petals',
   sky: { top: '#3f4963', bottom: '#8490a9', haze: 0.4, hazeColor: '#ffffff' },
   fire: { core: '255, 255, 255', mid: '226, 234, 255', tip: '160, 178, 235', ember: 0xdde6ff } });
-// 5, Third Eye: emerald green, on a deep green-black sky with emerald clouds and green-tinted stars, with green fire.
-Object.assign(CARD_FACES[5], { name: 'Third Eye Chakra', color: '#1f9a55', emblem: 'assets/third-eye.webp', glow: '#8dffbf',
+// 5, Third Eye: emerald green, on a deep green-black sky with emerald clouds and little drifting eyes, with green fire.
+Object.assign(CARD_FACES[5], { name: 'Third Eye Chakra', color: '#1f9a55', emblem: 'assets/third-eye.webp', glow: '#8dffbf', backdrop: 'eyes',
   sky: { top: '#010805', bottom: '#041c11', haze: 0.42, hazeColor: '#4dff9a', cloud: '20, 150, 80', starTint: '#d6ffe6' },
   fire: { core: '236, 255, 244', mid: '110, 255, 170', tip: '20, 170, 90', ember: 0x3dff8f } });
-// 7, Seat of the Soul: violet, on a deep violet-black sky with violet clouds and violet-tinted stars, with violet fire.
-Object.assign(CARD_FACES[7], { name: 'Seat of the Soul', color: '#8b2fc4', emblem: 'assets/seat-of-the-soul.webp', glow: '#d79bff',
+// 7, Seat of the Soul: violet, on a deep violet-black sky with violet clouds and little violet flames rising, with violet fire.
+Object.assign(CARD_FACES[7], { name: 'Seat of the Soul', color: '#8b2fc4', emblem: 'assets/seat-of-the-soul.webp', glow: '#d79bff', backdrop: 'flames',
   sky: { top: '#05010b', bottom: '#170528', haze: 0.42, hazeColor: '#c46bff', cloud: '125, 40, 190', starTint: '#ecd9ff' },
   fire: { core: '250, 240, 255', mid: '205, 130, 255', tip: '130, 40, 215', ember: 0xb45cff } });
-// A card with a video uses it as its whole picture: a still frame at rest, playing once two of that card are revealed.
+// A card with a video shows a still frame at rest. The video plays while you point at the card, and once two of that card are revealed.
 // poster: the still shown before the video has ever played.
-Object.assign(CARD_FACES[9], { name: 'Holy Spirit', color: '#b6479a', video: 'assets/holy-spirit.mp4', poster: 'assets/holy-spirit.jpg' });
+// The video sits in a window at the top of the card with the name in a band beneath it; sky colours the band.
+// credit: a line of small print naming the artist.
+Object.assign(CARD_FACES[9], { name: 'Holy Spirit', color: '#b6479a', glow: '#ffa6e6', video: 'assets/holy-spirit.mp4', poster: 'assets/holy-spirit.jpg',
+  sky: { top: '#1a0620', bottom: '#3d0e44', haze: 0 } });
+Object.assign(CARD_FACES[11], { name: 'Victory', color: '#c9980c', glow: '#ffe08a', video: 'assets/victory.mp4', poster: 'assets/victory.jpg',
+  sky: { top: '#2b1b02', bottom: '#5c3e07', haze: 0 } });
+Object.assign(CARD_FACES[12], { name: 'Threefold Flame', color: '#6f7fd8', glow: '#ffffff', video: 'assets/threefold-flame.mp4', poster: 'assets/threefold-flame.jpg',
+  credit: 'Art \u00a9 Aimee Boonstra', sky: { top: '#0d1132', bottom: '#262e6b', haze: 0 } });
 // An emblem winds up while you point at it, and whenever two of its cards are revealed as a pair.
 // windUp: seconds to reach full speed under the pointer. pairWindUp: the same for a revealed pair. runDown: seconds to stop.
 // top: full speed in turns per second. The emblem smears into a blur and catches fire as it speeds up.
@@ -972,6 +979,7 @@ function makeView() {
   // Card textures, painted on canvases so the faces stay data-driven.
   const TW = 320, TH = 448, TS = 2;
   const EMBLEM = { y: 186, size: 228 };   // where the emblem floats on the card face, in TW x TH units
+  const FILM = { x: 24, y: 24, w: 272, h: 306 };   // the video window on a video card, in the same units
   let paperImg = null, backImg = null;
   const faceImgs = {};
   function roundRect(g, x, y, w, h, r) {
@@ -1046,16 +1054,26 @@ function makeView() {
     const { g, tex } = texts[n], f = CARD_FACES[n];
     const links = S && S.mode === 'spicy' ? connected(n).join('  ·  ') : '';
     const panelW = TW - 2 * INSET, W = CARD_TEXT.artWeight;
+    const film = !!f.video;
     g.clearRect(0, 0, TW, TH);
-    panelPath(g, 8, 10); g.strokeStyle = 'rgba(255,255,255,.3)'; g.lineWidth = 1.5; g.stroke();
+    if (film) roundRect(g, FILM.x, FILM.y, FILM.w, FILM.h, 10); else panelPath(g, 8, 10);
+    g.strokeStyle = 'rgba(255,255,255,.35)'; g.lineWidth = 1.5; g.stroke();
     g.textBaseline = 'middle'; g.textAlign = 'center';
     g.fillStyle = CARD_TEXT.light;
     g.shadowColor = 'rgba(0,0,8,.9)'; g.shadowBlur = 7 * TS;   // a dark halo keeps the lettering clear of the stars behind it
     fitFont(g, f.label, W, 42, 58);
     g.fillText(f.label, INSET + 34, INSET + 40);
-    g.save(); g.translate(TW - INSET - 34, TH - INSET - 40); g.rotate(Math.PI); g.fillText(f.label, 0, 0); g.restore();
-    if (f.name) { fitFont(g, f.name, W, 33, panelW - 36); g.fillText(f.name, TW / 2, 342); }
-    if (links) { fitFont(g, links, W, 23, 140); g.fillText(links, TW / 2, 386); }
+    if (film) {
+      // Name in the band under the video window, with any connected numbers and the artist's credit below it.
+      const bandMid = (FILM.y + FILM.h + TH - INSET) / 2, extra = (links ? 1 : 0) + (f.credit ? 1 : 0);
+      if (f.name) { fitFont(g, f.name, W, 33, panelW - 30); g.fillText(f.name, TW / 2, bandMid - extra * 11); }
+      if (links) { fitFont(g, links, W, 21, 140); g.fillText(links, TW / 2, bandMid + (f.credit ? 14 : 24)); }
+      if (f.credit) { g.shadowBlur = 3 * TS; fitFont(g, f.credit, 400, 11.5, panelW - 30); g.globalAlpha = 0.85; g.fillText(f.credit, TW / 2, TH - INSET - 13); g.globalAlpha = 1; }
+    } else {
+      g.save(); g.translate(TW - INSET - 34, TH - INSET - 40); g.rotate(Math.PI); g.fillText(f.label, 0, 0); g.restore();
+      if (f.name) { fitFont(g, f.name, W, 33, panelW - 36); g.fillText(f.name, TW / 2, 342); }
+      if (links) { fitFont(g, links, W, 23, 140); g.fillText(links, TW / 2, 386); }
+    }
     g.shadowColor = 'transparent'; g.shadowBlur = 0;
     tex.needsUpdate = true;
   }
@@ -1284,6 +1302,68 @@ function makeView() {
       }
     }
   }
+  // Little flames: one seamless tile of small violet flames, each a teardrop with a brighter heart.
+  function paintFlames(cv, seed, count) {
+    const g = cv.getContext('2d'), T = cv.width;
+    let sd = seed;
+    const rnd = () => { sd = (sd * 16807) % 2147483647; return sd / 2147483647; };
+    const tongue = (h, w, lean) => {
+      g.beginPath();
+      g.moveTo(lean * h * 0.5, -h * 0.62);
+      g.bezierCurveTo(w * 0.2 + lean * h * 0.2, -h * 0.25, w * 0.62, -h * 0.02, w * 0.5, h * 0.2);
+      g.bezierCurveTo(w * 0.42, h * 0.48, -w * 0.42, h * 0.48, -w * 0.5, h * 0.2);
+      g.bezierCurveTo(-w * 0.62, -h * 0.02, -w * 0.12 + lean * h * 0.2, -h * 0.22, lean * h * 0.5, -h * 0.62);
+    };
+    for (let i = 0; i < count; i++) {
+      const x = rnd() * T, y = rnd() * T, h = 24 + Math.pow(rnd(), 1.5) * 34, w = h * (0.46 + rnd() * 0.14), lean = (rnd() - 0.5) * 0.5, a = 0.65 + rnd() * 0.35;
+      for (const dx of [-T, 0, T]) for (const dy of [-T, 0, T]) {
+        const px = x + dx, py = y + dy;
+        if (px < -h || px > T + h || py < -h || py > T + h) continue;
+        g.save();
+        g.translate(px, py);
+        g.globalAlpha = a;
+        const body = g.createLinearGradient(0, h * 0.4, 0, -h * 0.6);
+        body.addColorStop(0, '#e9c4ff'); body.addColorStop(0.45, '#b45cff'); body.addColorStop(1, '#6a1fd0');
+        g.shadowColor = '#a04dff'; g.shadowBlur = h * 0.45;
+        tongue(h, w, lean); g.fillStyle = body; g.fill();
+        g.shadowColor = 'transparent';
+        g.translate(0, h * 0.12);
+        const core = g.createLinearGradient(0, h * 0.25, 0, -h * 0.3);
+        core.addColorStop(0, '#ffffff'); core.addColorStop(1, '#e2b6ff');
+        tongue(h * 0.52, w * 0.5, lean); g.fillStyle = core; g.fill();
+        g.restore();
+      }
+    }
+  }
+  // Little eyes: one seamless tile of small almond eyes with emerald irises.
+  function paintEyes(cv, seed, count) {
+    const g = cv.getContext('2d'), T = cv.width;
+    let sd = seed;
+    const rnd = () => { sd = (sd * 16807) % 2147483647; return sd / 2147483647; };
+    for (let i = 0; i < count; i++) {
+      const x = rnd() * T, y = rnd() * T, w = 30 + Math.pow(rnd(), 1.5) * 30, h = w * 0.5, tilt = (rnd() - 0.5) * 0.5, a = 0.65 + rnd() * 0.35;
+      for (const dx of [-T, 0, T]) for (const dy of [-T, 0, T]) {
+        const px = x + dx, py = y + dy;
+        if (px < -w || px > T + w || py < -w || py > T + w) continue;
+        g.save();
+        g.translate(px, py); g.rotate(tilt);
+        g.globalAlpha = a;
+        const almond = () => { g.beginPath(); g.moveTo(-w / 2, 0); g.quadraticCurveTo(0, -h * 0.95, w / 2, 0); g.quadraticCurveTo(0, h * 0.95, -w / 2, 0); };
+        g.shadowColor = '#43ff9c'; g.shadowBlur = w * 0.3;
+        almond(); g.fillStyle = '#f2fff7'; g.fill();
+        g.shadowColor = 'transparent';
+        g.save(); almond(); g.clip();
+        const iris = g.createRadialGradient(0, 0, h * 0.08, 0, 0, h * 0.44);
+        iris.addColorStop(0, '#a8ffcf'); iris.addColorStop(0.55, '#19b866'); iris.addColorStop(1, '#0a6b3a');
+        g.fillStyle = iris; g.beginPath(); g.arc(0, 0, h * 0.44, 0, 6.2832); g.fill();
+        g.fillStyle = '#04150c'; g.beginPath(); g.arc(0, 0, h * 0.18, 0, 6.2832); g.fill();
+        g.fillStyle = 'rgba(255,255,255,.9)'; g.beginPath(); g.arc(-h * 0.14, -h * 0.14, h * 0.07, 0, 6.2832); g.fill();
+        g.restore();
+        almond(); g.strokeStyle = '#7dffb9'; g.lineWidth = Math.max(1, w * 0.035); g.stroke();
+        g.restore();
+      }
+    }
+  }
   /*HEART-END*/
   // Drifting layers of small pictures. speed: card widths per second, across and down (negative is up).
   function driftLayers(paint, seed, count, specs) {
@@ -1305,7 +1385,11 @@ function makeView() {
     // White petals falling with a slight sideways drift.
     petals: driftLayers(paintPetals, 733, 34, [{ repeat: 1.25, speed: [0.01, 0.028], turn: 0.4, opacity: 0.75 }, { repeat: 0.72, speed: [-0.014, 0.05], turn: 2.1, opacity: 1 }]),
     // Pink hearts floating gently upward.
-    hearts: driftLayers(paintHearts, 919, 30, [{ repeat: 1.3, speed: [0.006, -0.02], opacity: 0.55 }, { repeat: 0.8, speed: [-0.009, -0.036], opacity: 0.95 }])
+    hearts: driftLayers(paintHearts, 919, 30, [{ repeat: 1.3, speed: [0.006, -0.02], opacity: 0.55 }, { repeat: 0.8, speed: [-0.009, -0.036], opacity: 0.95 }]),
+    // Violet flames rising.
+    flames: driftLayers(paintFlames, 331, 22, [{ repeat: 1.3, speed: [0.004, -0.032], opacity: 0.5 }, { repeat: 0.8, speed: [-0.006, -0.058], opacity: 0.9 }]),
+    // Emerald eyes drifting slowly sideways.
+    eyes: driftLayers(paintEyes, 577, 16, [{ repeat: 1.3, speed: [0.012, -0.006], opacity: 0.45 }, { repeat: 0.8, speed: [-0.016, -0.011], opacity: 0.85 }])
   };
   // Midnight-blue clouds: soft seamless patches that drift across the black sky while their strength rises and falls,
   // so the panel moves between black and midnight blue instead of sitting at one flat colour.
@@ -1423,23 +1507,26 @@ function makeView() {
   }
   const fireGeo = new THREE.PlaneGeometry(CW * FIRE.size, CW * FIRE.size);
   const smooth = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
-  // Video pictures: one shared video per card number, filling the card's panel. It shows a still until asked to play.
+  // Video pictures: one shared video per card number, shown in a window at the top of the card. It shows a still until asked to play.
+  const filmHalf = { x: FILM.w / TW * CW / 2, y: FILM.h / TH * CH / 2 };
+  const filmGeo = new THREE.ShapeGeometry(roundedShape(filmHalf.x, filmHalf.y, CW * 10 / TW), 6);
+  const filmZ = (FILM.y + FILM.h / 2 - TH / 2) / TH * CH;
   const videos = {};
   function videoBackdrop(n) {
     const f = CARD_FACES[n];
-    const fitPanel = tex => {
+    const fitPanel = tex => {   // stretch the picture to cover the window exactly once
       tex.encoding = THREE.sRGBEncoding;
-      tex.repeat.set(1 / (2 * panelHalf.x), 1 / (2 * panelHalf.y));
+      tex.repeat.set(1 / (2 * filmHalf.x), 1 / (2 * filmHalf.y));
       tex.offset.set(0.5, 0.5);
       return tex;
     };
-    const material = overlayMaterial({ transparent: false, visible: false }, 1);
+    const material = overlayMaterial({ transparent: false, visible: false }, 2);
     const el = document.createElement('video');
     el.muted = true; el.loop = true; el.playsInline = true; el.preload = 'auto';
     el.setAttribute('muted', ''); el.setAttribute('playsinline', '');
     el.src = f.video;
     const film = fitPanel(new THREE.VideoTexture(el));
-    const v = { material, wanted: false, playing: false, holdUntil: 0,
+    const v = { material, wanted: false, hover: false, playing: false, holdUntil: 0,
       play() {
         if (v.playing) return;
         v.playing = true;
@@ -1479,6 +1566,7 @@ function makeView() {
     let skyMat = null, textMat = null;
     if (videos[n]) {
       texts[n] = makeTexture();
+      skyMat = skyMaterial(n);
       textMat = overlayMaterial({ map: texts[n].tex }, 6);
     }
     if (emblemMat) {
@@ -1539,9 +1627,10 @@ function makeView() {
         body.add(overlayMesh(cardGeo, textMat, 8));
         flare = glowing(flareGeo, flareTex, 9);
       } else if (videos[n]) {
-        body.add(overlayMesh(starGeo, videos[n].material, 1));
+        body.add(overlayMesh(starGeo, skyMat, 1));
+        body.add(overlayMesh(filmGeo, videos[n].material, 2, filmZ));
         body.add(overlayMesh(cardGeo, textMat, 6));
-        flare = overlayMesh(flareGeo, overlayMaterial({ map: flareTex, opacity: 0, blending: THREE.AdditiveBlending }, 7), 7, emblemZ);
+        flare = overlayMesh(flareGeo, overlayMaterial({ map: flareTex, opacity: 0, blending: THREE.AdditiveBlending }, 7), 7, filmZ);
         flare.visible = false;
         body.add(flare);
       }
@@ -1731,7 +1820,7 @@ function makeView() {
       while (o && o.userData.id === undefined) o = o.parent;
       if (!o) continue;
       const id = o.userData.id, t = cards[id].target;
-      if ((t && (t.held || (t.face && cards[id].emblem))) || OPTS.some(x => x.card.id === id)) return id;
+      if ((t && (t.held || (t.face && (cards[id].emblem || cards[id].video)))) || OPTS.some(x => x.card.id === id)) return id;
     }
     return -1;
   }
@@ -1744,7 +1833,7 @@ function makeView() {
     const r = stage.getBoundingClientRect();
     cursor.style.transform = `translate(${(ev.clientX - r.left).toFixed(1)}px, ${(ev.clientY - r.top).toFixed(1)}px)`;
     const c = hoverId >= 0 ? cards[hoverId] : null;
-    const onEmblem = !!(c && c.emblem && c.target && c.target.face);
+    const onEmblem = !!(c && (c.emblem || c.video) && c.target && c.target.face);
     if (onEmblem) cursor.style.setProperty('--cursor-glow', CARD_FACES[Math.floor(hoverId / 3) + 1].glow || '#9fd4ff');
     cursor.className = 'on' + (c ? ' over' : '') + (onEmblem ? ' glow' : '');
   });
@@ -1834,7 +1923,10 @@ function makeView() {
       for (const rgb in cloud.materials) cloud.materials[rgb].opacity = swell;
     }
     // A video stops once its cards are no longer a matching pair, a few seconds later if they made a trio.
-    for (const n in videos) { const v = videos[n]; if (v.playing && !v.wanted && now > v.holdUntil) v.pause(); }
+    for (const n in videos) videos[n].hover = false;
+    const under = hoverId >= 0 ? cards[hoverId] : null;
+    if (under && under.video && under.target && under.target.face && !reduceMotion) { under.video.hover = true; under.video.play(); }   // pointing at a video card plays it
+    for (const n in videos) { const v = videos[n]; if (v.playing && !v.wanted && !v.hover && now > v.holdUntil) v.pause(); }
     renderer.render(scene, camera);
   }
 
