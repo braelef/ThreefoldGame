@@ -185,6 +185,19 @@ select, .btn { font: inherit; color: var(--ink); background: var(--panel); borde
   -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round'%3E%3Crect x='9' y='3' width='6' height='11' rx='3'/%3E%3Cpath d='M5 11a7 7 0 0 0 14 0M12 18v3M3 3l18 18'/%3E%3C/svg%3E") center / contain no-repeat;
   mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round'%3E%3Crect x='9' y='3' width='6' height='11' rx='3'/%3E%3Cpath d='M5 11a7 7 0 0 0 14 0M12 18v3M3 3l18 18'/%3E%3C/svg%3E") center / contain no-repeat; }
 #end-note { color: var(--m-soft); }
+/* Rules: a wider card with readable running text. */
+.menu-card.wide { width: min(100%, 640px); }
+#menu-rules .rules { display: flex; flex-direction: column; gap: 4px; font-size: 1rem; line-height: 1.6; color: var(--m-ink); }
+#menu-rules h3 { margin: 16px 0 2px; font-family: "Cinzel", Georgia, serif; font-weight: 600; font-size: 1.05rem; letter-spacing: .04em; color: var(--m-gold); }
+#menu-rules h3:first-child { margin-top: 0; }
+#menu-rules p { margin: 0 0 8px; max-width: 62ch; }
+#menu-rules table { border-collapse: collapse; margin: 2px 0 10px; font-variant-numeric: tabular-nums; }
+#menu-rules th, #menu-rules td { padding: 5px 14px 4px 0; text-align: left; border-bottom: 1px solid rgba(226, 192, 108, .2); }
+#menu-rules th { font-size: .78rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--m-soft); }
+#rules-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 6px 14px; margin: 2px 0 6px; padding: 0; list-style: none; }
+#rules-cards li { display: flex; align-items: center; gap: 10px; }
+#rules-cards .num { min-width: 30px; height: 26px; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #fff; }
+.menu-quiet { font-size: .95rem; padding: 9px 14px 7px; }
 /* Number badges: a readable number over every face-up card on the table, whatever its size. */
 .badge { position: absolute; left: 0; top: 0; min-width: 30px; height: 30px; padding: 0 7px; display: flex; align-items: center; justify-content: center;
   border-radius: 999px; border: 2px solid #fff; color: #fff; font: 700 1.05rem/1 system-ui, -apple-system, "Segoe UI", sans-serif; font-variant-numeric: tabular-nums;
@@ -286,6 +299,7 @@ summary { cursor: pointer; color: var(--ink); font-weight: 600; }
             <button type="button" class="m-btn primary" id="menu-single">Single player</button>
             <button type="button" class="m-btn" id="menu-multi" aria-describedby="multi-note">Multiplayer</button>
             <p class="menu-note" id="multi-note"></p>
+            <button type="button" class="m-btn menu-quiet" id="menu-rules-btn">Rules</button>
           </div>
         </section>
         <section id="menu-net" hidden>
@@ -346,10 +360,48 @@ summary { cursor: pointer; color: var(--ink); font-weight: 600; }
           </div>
           <p class="menu-hint" id="lobby-wait"></p>
           <button type="button" class="m-btn primary" id="lobby-resume" hidden>Back to game</button>
+          <button type="button" class="m-btn menu-quiet" id="lobby-rules">Rules</button>
           <div class="menu-row">
             <button type="button" class="m-btn" id="lobby-leave">Leave</button>
             <button type="button" class="m-btn primary" id="lobby-start" hidden>Start game</button>
           </div>
+        </section>
+        <section id="menu-rules" hidden aria-labelledby="rules-title">
+          <h2 class="setup-h" id="rules-title">Rules</h2>
+          <div class="rules">
+            <h3>The cards</h3>
+            <p>Threefold is played with thirty-six cards made up of three copies of each number from 1 to 12. Most of the numbers carry one of the seven chakras or a sacred image, listed at the end of these rules, though in play the only thing that matters about a card is its number.</p>
+
+            <h3>Setting up</h3>
+            <p>Every player is dealt a hand, and the cards left over are laid face down in the middle of the table. The number of cards in each hand depends on how many people are playing.</p>
+            <table>
+              <thead><tr><th scope="col">Players</th><th scope="col">Cards in each hand</th><th scope="col">Cards in the middle</th></tr></thead>
+              <tbody>
+                <tr><td>3</td><td>9</td><td>9</td></tr>
+                <tr><td>4</td><td>7</td><td>8</td></tr>
+                <tr><td>5</td><td>6</td><td>6</td></tr>
+                <tr><td>6</td><td>5</td><td>6</td></tr>
+              </tbody>
+            </table>
+            <p>Each hand is kept in order, with the lowest number on the left and the highest on the right. You can see your own cards but nobody else's, and because every hand is sorted the same way, a card shown from the end of someone's hand also tells you a little about the cards beside it.</p>
+
+            <h3>Taking a turn</h3>
+            <p>On your turn you reveal cards one at a time, trying to find three with the same number. Each card can come from one of two places: you can turn over any face-down card in the middle, or you can ask any player, yourself included, for the lowest or the highest card in their hand that has not already been shown this turn. A card taken from a hand is shown to everyone and stays in that hand. On screen, the cards you are allowed to choose rise slightly off the table, and you pick one by clicking or tapping it.</p>
+            <p>You keep going for as long as every card you have revealed shares a number. As soon as a card fails to match the ones before it, your turn is over, the revealed cards are turned back face down where they came from, and play moves on to the next player. If you reveal three cards with the same number, you take them as a trio and your turn ends there. There is no way to stop partway through a turn, so it is wise to start with a number you have good reason to think you can find three of.</p>
+
+            <h3>Winning</h3>
+            <p>In Simple mode the first player to collect three trios wins. Spicy mode needs only two trios, although they have to be connected, which means their numbers either add up to 7 or differ by 7. That gives eight connected pairs: 1 and 6, 2 and 5, 3 and 4, 1 and 8, 2 and 9, 3 and 10, 4 and 11, and 5 and 12. In a Spicy game each card shows the numbers it connects with beneath its name. Whichever mode you choose, a trio of 7s wins the game at once.</p>
+
+            <h3>Playing on your own</h3>
+            <p>In single player you face two to five computer players, and the difficulty sets how much they remember and how long revealed cards stay face up. On Normal they forget most of what they see and you get the longest look at each reveal, while on Master they remember every card that has been turned over and the cards flip back quickly.</p>
+
+            <h3>Playing with friends</h3>
+            <p>To play online, choose Multiplayer, enter your name, and either host a game or join one using the five-character room code your host shares with you. Opening the invite link a host sends will fill the code in for you. The host decides how many seats there are, and any seat that no person takes goes to a computer player. Everyone in the room can hear each other while they play, and the Mute button at the top of the screen switches your microphone off and on. When a guest leaves partway through, a computer player takes over their seat so the game can carry on, but when the host leaves, the game ends for everyone.</p>
+
+            <h3>The cards and their images</h3>
+            <ul id="rules-cards"></ul>
+          </div>
+          <button type="button" class="m-btn" id="rules-back">Back</button>
         </section>
         <form id="menu-setup" hidden>
           <h2 id="setup-title">Single player</h2>
@@ -392,17 +444,6 @@ summary { cursor: pointer; color: var(--ink); font-weight: 600; }
   </div>
   <div id="moves" aria-label="Available moves"></div>
 
-  <details>
-    <summary>How to play</summary>
-    <ul>
-      <li>There are 36 cards: three copies of each number from 1 to 12. Every hand is sorted from lowest to highest.</li>
-      <li>On your turn, reveal cards one at a time. Each reveal is either any face-down middle card, or the lowest or highest hidden card in any hand, including your own. Cards you can pick float slightly above the others. Your own cards are held up in front of you; point at one to enlarge it.</li>
-      <li>If a card does not match the one before it, your turn ends and every revealed card goes back where it was.</li>
-      <li>Reveal three of the same number and you keep them as a trio. Your turn then ends.</li>
-      <li>Simple mode: win with any three trios. Spicy mode: win with two connected trios, whose numbers add up to 7 or differ by 7 (the small numbers on each card).</li>
-      <li>The trio of 7s wins at once in either mode.</li>
-    </ul>
-  </details>
 </main>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -904,6 +945,26 @@ function fillSetup() {
   $('hint-players').textContent = `You and ${SETTINGS.players - 1} computer players. ${DEAL[SETTINGS.players][0]} cards each, ${DEAL[SETTINGS.players][1]} in the middle.`;
   $('hint-mode').textContent = HINTS.mode[SETTINGS.mode];
 }
+// The list of numbers and their images at the end of the rules, built from CARD_FACES so it stays current.
+function fillRulesCards() {
+  const list = $('rules-cards');
+  list.textContent = '';
+  for (let n = 1; n <= 12; n++) {
+    const f = CARD_FACES[n];
+    if (!f.name) continue;
+    const li = document.createElement('li');
+    const num = document.createElement('span');
+    num.className = 'num';
+    num.style.background = f.color;
+    num.textContent = f.label;
+    const name = document.createElement('span');
+    name.textContent = f.name;
+    li.appendChild(num);
+    li.appendChild(name);
+    list.appendChild(li);
+  }
+}
+let menuScreen = 'home';   // the screen the Rules screen goes back to
 function showMenu(screen) {
   hideEnd();
   menuOpen = true;
@@ -913,6 +974,10 @@ function showMenu(screen) {
   $('menu-setup').hidden = screen !== 'setup';
   $('menu-net').hidden = screen !== 'net';
   $('menu-lobby').hidden = screen !== 'lobby';
+  $('menu-rules').hidden = screen !== 'rules';
+  document.querySelector('.menu-card').classList.toggle('wide', screen === 'rules');
+  if (screen === 'rules') fillRulesCards();
+  else menuScreen = screen;
   if (screen === 'lobby') Net.renderLobby();
   $('menu-resume').hidden = !(gameStarted && S && S.winner === null);
   if (screen === 'setup') fillSetup();
@@ -920,6 +985,7 @@ function showMenu(screen) {
   const first = screen === 'setup' ? $('level-' + SETTINGS.level)
     : screen === 'net' ? ($('net-name').value ? $('net-host') : $('net-name'))
     : screen === 'lobby' ? (!$('lobby-resume').hidden ? $('lobby-resume') : !$('lobby-start').hidden ? $('lobby-start') : $('lobby-leave'))
+    : screen === 'rules' ? $('rules-back')
     : $('menu-resume').hidden ? $('menu-single') : $('menu-resume');
   first.focus({ preventScroll: true });
 }
@@ -946,7 +1012,8 @@ $('menu-setup').addEventListener('submit', e => {
 });
 $('menu').addEventListener('keydown', e => {
   if (e.key !== 'Escape') return;
-  if (!$('menu-setup').hidden || !$('menu-net').hidden) showMenu('home');
+  if (!$('menu-rules').hidden) showMenu(menuScreen);
+  else if (!$('menu-setup').hidden || !$('menu-net').hidden) showMenu('home');
   else if (!$('menu-lobby').hidden) { if (!$('lobby-resume').hidden) resumeGame(); }
   else if (!$('menu-resume').hidden) resumeGame();
 });
@@ -1408,6 +1475,9 @@ if (ON_CLAUDE) {
 }
 try { $('net-name').value = localStorage.getItem('threefold-name') || ''; } catch (e) { /* storage may be unavailable */ }
 $('menu-multi').addEventListener('click', () => { $('net-msg').textContent = ''; showMenu('net'); });
+$('menu-rules-btn').addEventListener('click', () => showMenu('rules'));
+$('lobby-rules').addEventListener('click', () => showMenu('rules'));
+$('rules-back').addEventListener('click', () => showMenu(menuScreen));
 $('net-back').addEventListener('click', () => showMenu('home'));
 $('net-host').addEventListener('click', () => Net.start(true));
 $('net-code').addEventListener('input', e => { e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5); });
