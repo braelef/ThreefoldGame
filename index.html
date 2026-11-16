@@ -419,7 +419,7 @@ summary { cursor: pointer; color: var(--ink); font-weight: 600; }
             <p>In Simple mode the first player to collect three trios wins. Spicy mode needs only two trios, although they have to be connected, which means their numbers either add up to 7 or differ by 7. That gives eight connected pairs: 1 and 6, 2 and 5, 3 and 4, 1 and 8, 2 and 9, 3 and 10, 4 and 11, and 5 and 12. In a Spicy game each card shows the numbers it connects with beneath its name. Whichever mode you choose, a trio of 7s wins the game at once.</p>
 
             <h3>Playing on your own</h3>
-            <p>In single player you face two to five computer players, and the difficulty sets how much they remember and how long revealed cards stay face up. On Normal they forget nearly everything they see and you get the longest look at each reveal, while on Impossible they remember every card that has been turned over and the cards flip back quickly.</p>
+            <p>In single player you face two to five computer players, and the difficulty sets how much they remember and how long revealed cards stay face up. On Normal they forget nearly everything they see and you get the longest look at each reveal, while on Impossible they remember every card that has been turned over and the cards flip back quickly. On the easier levels a computer player holding a pair at either end of its hand will often begin its turn by showing both cards, which tells you where two of that number are.</p>
 
             <h3>Playing with friends</h3>
             <p>To play online, choose Multiplayer, enter your name, and either host a game or join one using the five-character room code your host shares with you. Opening the invite link a host sends will fill the code in for you. The host decides how many seats there are, and any seat that no person takes goes to a computer player. Everyone in the room can hear each other while they play, and the Mute button at the top of the screen switches your microphone off and on. When a guest leaves partway through, a computer player takes over their seat so the game can carry on, but when the host leaves, the game ends for everyone.</p>
@@ -590,6 +590,8 @@ const CARD_FINISH = { gloss: 0.7, weave: 0, border: 0.05, paper: '#fdfcf7', pape
 const DEAL = { 3: [9, 9], 4: [7, 8], 5: [6, 6], 6: [5, 6] }; // players: [cards each, cards in the middle]
 const NAMES = ['You', 'Mira', 'Tobin', 'Sol', 'Wren', 'Kai'];
 const MEMORY = { normal: 0.1, hard: 0.25, expert: 0.5, master: 0.8, impossible: 1 }; // chance a computer player remembers a card it sees
+// Chance a computer player opens its turn by showing a pair from the end of its own hand, so you can see it holds two.
+const SHOW_PAIRS = { normal: 1, hard: 0.75, expert: 0.4, master: 0, impossible: 0 };
 
 const connected = n => [7 - n, n - 7, n + 7].filter(x => x >= 1 && x <= 12);
 
@@ -710,6 +712,14 @@ function aiChoose(s, rng) {
     const winning = sure.filter(n => wins(pl.trios.concat(n), s.mode));
     const n = pick(winning.length ? winning : sure);
     return pick(known.filter(o => o.card.n === n));
+  }
+  // On the easier levels, a pair at either end of its own hand is shown first: both cards come up one after the other.
+  if (rng() < (SHOW_PAIRS[s.level] || 0)) {
+    const down = pl.hand.filter(c => !c.up), ends = [];
+    if (down.length >= 2 && down[0].n === down[1].n) ends.push('low');
+    if (down.length >= 2 && down[down.length - 1].n === down[down.length - 2].n) ends.push('high');
+    const end = ends.length ? pick(ends) : null;
+    if (end) return opts.find(o => o.where === 'hand' && o.p === s.current && o.end === end);
   }
   const pairs = ns.filter(n => reach[n] === 2);
   const target = pairs.length ? pick(pairs)
@@ -990,9 +1000,9 @@ function startNew() {
 /* ---------- Start menu ---------- */
 const HINTS = {
   level: {
-    normal: 'Opponents forget nearly everything they see. Revealed cards stay face up the longest.',
-    hard: 'Opponents forget most of the cards they see. Revealed cards stay face up a long time.',
-    expert: 'Opponents forget about half of the cards they see. Revealed cards flip back a little sooner.',
+    normal: 'Opponents forget nearly everything they see and usually show you the pairs they hold. Revealed cards stay face up the longest.',
+    hard: 'Opponents forget most of the cards they see and often show you the pairs they hold. Revealed cards stay face up a long time.',
+    expert: 'Opponents forget about half of the cards they see and sometimes show you the pairs they hold. Revealed cards flip back a little sooner.',
     master: 'Opponents remember most of the cards they see. Revealed cards flip back quickly.',
     impossible: 'Opponents remember every card they see. Revealed cards flip back fastest.'
   },
