@@ -2440,7 +2440,7 @@ function makeView() {
     // (the library's own video texture re-sends it on every screen refresh, even while paused).
     const film = fitPanel(new THREE.Texture(el));
     film.minFilter = THREE.LinearFilter; film.magFilter = THREE.LinearFilter; film.generateMipmaps = false;
-    const v = { material, el, film, frameTime: -1, wanted: false, hover: false, lastHover: 0, playing: false, holdUntil: 0,
+    const v = { material, el, film, frameTime: -1, fresh: false, lastUpload: 0, shown: false, wanted: false, hover: false, lastHover: 0, playing: false, holdUntil: 0,
       play() {
         if (v.playing) return;
         v.playing = true;
@@ -2468,6 +2468,12 @@ function makeView() {
       }
     };
     // Switch from the still to the film only once the film really has a frame to show.
+    // The browser says exactly when a new video frame is ready; only then does a picture go to the graphics card.
+    if ('requestVideoFrameCallback' in el) {
+      const onFrame = () => { v.fresh = true; el.requestVideoFrameCallback(onFrame); };
+      el.requestVideoFrameCallback(onFrame);
+      v.frameReports = true;
+    }
     el.addEventListener('playing', () => {
       if (material.map === film) return;
       material.map = film; material.visible = true; material.needsUpdate = true;
@@ -2644,9 +2650,11 @@ function makeView() {
         }
       });
     });
+    for (const n in videos) videos[n].shown = false;
     cards.forEach(c => {
       const t = c.target;
       if (!t) return;
+      if (c.video && t.face) c.video.shown = true;
       if (!t.quat) t.quat = yawQ(t.yaw);
       c.meshes.forEach(m => { m.castShadow = !t.held; });
     });
@@ -2974,7 +2982,11 @@ function makeView() {
     for (const n in videos) {
       const v = videos[n];
       if (!VIDEOS_ALWAYS_PLAY && v.playing && !v.wanted && now - v.lastHover > 600 && now > v.holdUntil) v.pause();
-      if (v.el.readyState >= 2 && v.el.currentTime !== v.frameTime) { v.frameTime = v.el.currentTime; v.film.needsUpdate = true; }
+      // Send a picture only for a video showing on a face-up card, and only when it has a new frame
+      // (browsers without frame reports: at most 30 times a second).
+      if (!v.shown || v.el.readyState < 2) continue;
+      const fresh = v.frameReports ? v.fresh : v.el.currentTime !== v.frameTime && now - v.lastUpload > 30;
+      if (fresh || v.frameTime < 0) { v.fresh = false; v.frameTime = v.el.currentTime; v.lastUpload = now; v.film.needsUpdate = true; }
     }
     renderer.render(scene, camera);
   }
