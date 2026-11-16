@@ -515,7 +515,9 @@ Object.assign(CARD_FACES[6], { symmetry: 10, name: 'Solar Plexus Chakra', color:
 Object.assign(CARD_FACES[7], { symmetry: 6, name: 'Seat of the Soul', color: '#8b2fc4', emblem: 'assets/seat-of-the-soul.webp', glow: '#d79bff', backdrop: 'flames',
   sky: { top: '#05010b', bottom: '#170528', haze: 0.42, hazeColor: '#c46bff', cloud: '125, 40, 190', starTint: '#ecd9ff' },
   fire: { core: '250, 240, 255', mid: '205, 130, 255', tip: '130, 40, 215', ember: 0xb45cff } });
-// A card with a video shows a still frame at rest. The video plays while you point at the card, and once two of that card are revealed.
+// Video cards play all the time when VIDEOS_ALWAYS_PLAY is true. Set it to false to show a still frame at rest and
+// play the video only while you point at the card or once two of that card are revealed.
+const VIDEOS_ALWAYS_PLAY = true;
 // poster: the still shown before the video has ever played.
 // The video sits in a window at the top of the card with the name in a band beneath it; sky colours the band.
 // credit: a line of small print naming the artist.
@@ -2968,10 +2970,10 @@ function makeView() {
     // Pointing at a video card plays it. It keeps playing until the pointer has been off it for a moment, so the
     // edge of a card or the overlap between cards in your hand can't stop and restart it.
     const under = hoverId >= 0 ? cards[hoverId] : null;
-    if (under && under.video && under.target && under.target.face && !reduceMotion) { under.video.lastHover = now; under.video.play(); }
+    if (!VIDEOS_ALWAYS_PLAY && under && under.video && under.target && under.target.face && !reduceMotion) { under.video.lastHover = now; under.video.play(); }
     for (const n in videos) {
       const v = videos[n];
-      if (v.playing && !v.wanted && now - v.lastHover > 600 && now > v.holdUntil) v.pause();
+      if (!VIDEOS_ALWAYS_PLAY && v.playing && !v.wanted && now - v.lastHover > 600 && now > v.holdUntil) v.pause();
       if (v.el.readyState >= 2 && v.el.currentTime !== v.frameTime) { v.frameTime = v.el.currentTime; v.film.needsUpdate = true; }
     }
     renderer.render(scene, camera);
@@ -2998,11 +3000,17 @@ function makeView() {
       if (c.video && inPlay) c.video.wanted = true;
     });
     // Videos play on the cards of a matching pair (not for anyone who has asked for reduced motion).
-    if (!reduceMotion) for (const n in videos) if (videos[n].wanted) videos[n].play();
+    if (!reduceMotion && !VIDEOS_ALWAYS_PLAY) for (const n in videos) if (videos[n].wanted) videos[n].play();
   }
 
-  // Wake each video once, one after another, shortly after the table appears.
-  setTimeout(async () => { for (const n in videos) await videos[n].warm(); }, 1200);
+  // Start every video looping shortly after the table appears (or, on hover-to-play, just wake each one once).
+  // A browser that refuses to start videos on its own gets another try at your first click or tap.
+  const startFilms = () => { if (!reduceMotion) for (const n in videos) videos[n].play(); };
+  setTimeout(async () => {
+    if (VIDEOS_ALWAYS_PLAY) startFilms();
+    else for (const n in videos) await videos[n].warm();
+  }, 1200);
+  if (VIDEOS_ALWAYS_PLAY) window.addEventListener('pointerdown', () => { for (const n in videos) if (videos[n].el.paused) { videos[n].playing = false; videos[n].play(); } }, { passive: true });
 
   fit();
   if (window.ResizeObserver) new ResizeObserver(fit).observe(stage);
