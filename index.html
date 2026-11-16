@@ -406,8 +406,8 @@ Object.assign(CARD_FACES[3], { name: 'Heart Chakra', color: '#c4467f', emblem: '
 Object.assign(CARD_FACES[4], { name: 'Root Chakra', color: '#93a1b8', emblem: 'assets/root.webp', glow: '#ffffff', backdrop: 'petals',
   sky: { top: '#3f4963', bottom: '#8490a9', haze: 0.4, hazeColor: '#ffffff' },
   fire: { core: '255, 255, 255', mid: '226, 234, 255', tip: '160, 178, 235', ember: 0xdde6ff } });
-// 5, Third Eye: emerald green, on a deep green-black sky with emerald clouds and little glowing triangles, with green fire.
-Object.assign(CARD_FACES[5], { name: 'Third Eye Chakra', color: '#1f9a55', emblem: 'assets/third-eye.webp', glow: '#8dffbf', backdrop: 'triangles',
+// 5, Third Eye: emerald green, on a deep green-black sky with emerald clouds and twinkling sparkles, with green fire.
+Object.assign(CARD_FACES[5], { name: 'Third Eye Chakra', color: '#1f9a55', emblem: 'assets/third-eye.webp', glow: '#8dffbf', backdrop: 'sparkles',
   sky: { top: '#010805', bottom: '#041c11', haze: 0.42, hazeColor: '#4dff9a', cloud: '20, 150, 80', starTint: '#d6ffe6' },
   fire: { core: '236, 255, 244', mid: '110, 255, 170', tip: '20, 170, 90', ember: 0x3dff8f } });
 // 7, Seat of the Soul: violet, on a deep violet-black sky with violet clouds and little violet flames rising, with violet fire.
@@ -1947,27 +1947,41 @@ function makeView() {
       }
     }
   }
-  // Little triangles: one seamless tile of small glowing emerald triangles, mostly pointing up, a few nested.
-  function paintTriangles(cv, seed, count) {
-    const g = cv.getContext('2d'), T = cv.width;
+  // Sparkles: one seamless tile of four-pointed glints in white and emerald, each with a soft glow, plus fine glitter.
+  function paintSparkles(cv, seed, count) {
+    const g = cv.getContext('2d'), T = cv.width, tints = ['#ffffff', '#d6ffe6', '#8dffbf', '#4dff9a'];
     let sd = seed;
     const rnd = () => { sd = (sd * 16807) % 2147483647; return sd / 2147483647; };
-    const tri = r => { g.beginPath(); for (let k = 0; k < 3; k++) { const a = -Math.PI / 2 + k * 2.0944; g.lineTo(Math.cos(a) * r, Math.sin(a) * r); } g.closePath(); };
-    for (let i = 0; i < count; i++) {
-      const x = rnd() * T, y = rnd() * T, r = 9 + Math.pow(rnd(), 1.5) * 18, tilt = (rnd() < 0.8 ? 0 : Math.PI) + (rnd() - 0.5) * 0.35, a = 0.6 + rnd() * 0.4, nested = rnd() < 0.35;
-      for (const dx of [-T, 0, T]) for (const dy of [-T, 0, T]) {
-        const px = x + dx, py = y + dy;
-        if (px < -r * 2 || px > T + r * 2 || py < -r * 2 || py > T + r * 2) continue;
-        g.save();
-        g.translate(px, py); g.rotate(tilt);
-        g.globalAlpha = a;
-        g.lineJoin = 'round';
-        g.shadowColor = '#3dff8f'; g.shadowBlur = r * 0.9;
-        tri(r); g.fillStyle = 'rgba(61, 255, 143, .14)'; g.fill();
-        g.strokeStyle = '#b8ffd6'; g.lineWidth = Math.max(1.4, r * 0.13); g.stroke();
-        if (nested) { tri(r * 0.45); g.strokeStyle = '#7dffb9'; g.lineWidth = Math.max(1, r * 0.08); g.stroke(); }
-        g.restore();
+    const glint = (r, w) => {   // a four-pointed star with pinched sides
+      g.beginPath();
+      for (let k = 0; k < 4; k++) {
+        const a = k * Math.PI / 2, b = a + Math.PI / 4;
+        g.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+        g.quadraticCurveTo(Math.cos(b) * w, Math.sin(b) * w, Math.cos(a + Math.PI / 2) * r, Math.sin(a + Math.PI / 2) * r);
       }
+      g.closePath();
+    };
+    const wrap = (x, y, r, draw) => { for (const dx of [-T, 0, T]) for (const dy of [-T, 0, T]) {
+      const px = x + dx, py = y + dy;
+      if (px > -r * 2 && px < T + r * 2 && py > -r * 2 && py < T + r * 2) draw(px, py); } };
+    for (let i = 0; i < 220; i++) {   // glitter
+      const x = rnd() * T, y = rnd() * T, r = 0.5 + rnd() * 1.1, a = 0.25 + rnd() * 0.6, tint = tints[Math.floor(rnd() * tints.length)];
+      wrap(x, y, r, (px, py) => { g.globalAlpha = a; g.fillStyle = tint; g.beginPath(); g.arc(px, py, r, 0, 6.2832); g.fill(); });
+    }
+    for (let i = 0; i < count; i++) {
+      const x = rnd() * T, y = rnd() * T, r = 6 + Math.pow(rnd(), 2) * 16, turn = rnd() < 0.7 ? 0 : Math.PI / 4, a = 0.7 + rnd() * 0.3, tint = tints[Math.floor(rnd() * 3)];
+      wrap(x, y, r, (px, py) => {
+        g.save();
+        g.translate(px, py); g.rotate(turn);
+        const halo = g.createRadialGradient(0, 0, 0, 0, 0, r * 1.3);
+        halo.addColorStop(0, 'rgba(120, 255, 180, .45)'); halo.addColorStop(1, 'rgba(120, 255, 180, 0)');
+        g.globalAlpha = a; g.fillStyle = halo; g.fillRect(-r * 1.3, -r * 1.3, r * 2.6, r * 2.6);
+        g.shadowColor = '#5dffa6'; g.shadowBlur = r * 0.8;
+        glint(r, r * 0.16); g.fillStyle = tint; g.fill();
+        g.shadowBlur = 0;
+        g.fillStyle = '#ffffff'; g.beginPath(); g.arc(0, 0, Math.max(1, r * 0.12), 0, 6.2832); g.fill();
+        g.restore();
+      });
     }
   }
   /*HEART-END*/
@@ -1984,7 +1998,7 @@ function makeView() {
       tex.rotation = o.turn || 0;
       tex.offset.set(i * 0.37, i * 0.61);
       tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
-      return { tex, speed: o.speed, material: overlayMaterial({ map: tex, opacity: o.opacity }, i + 3) };
+      return { tex, speed: o.speed, base: o.opacity, twinkle: !!o.twinkle, phase: i * 2.1, material: overlayMaterial({ map: tex, opacity: o.opacity }, i + 3) };
     });
   }
   const drifts = {
@@ -1994,8 +2008,8 @@ function makeView() {
     hearts: driftLayers(paintHearts, 919, 30, [{ repeat: 1.3, speed: [0.006, -0.02], opacity: 0.55 }, { repeat: 0.8, speed: [-0.009, -0.036], opacity: 0.95 }]),
     // Violet flames rising.
     flames: driftLayers(paintFlames, 331, 22, [{ repeat: 1.3, speed: [0.004, -0.032], opacity: 0.5 }, { repeat: 0.8, speed: [-0.006, -0.058], opacity: 0.9 }]),
-    // Emerald triangles drifting slowly upward.
-    triangles: driftLayers(paintTriangles, 577, 20, [{ repeat: 1.3, speed: [0.006, -0.012], opacity: 0.45 }, { repeat: 0.8, speed: [-0.008, -0.022], opacity: 0.85 }])
+    // Emerald sparkles drifting slowly and twinkling.
+    sparkles: driftLayers(paintSparkles, 577, 18, [{ repeat: 1.3, speed: [0.006, -0.01], opacity: 0.6, twinkle: true }, { repeat: 0.8, speed: [-0.008, -0.018], opacity: 0.95, twinkle: true }])
   };
   // Midnight-blue clouds: soft seamless patches that drift across the black sky while their strength rises and falls,
   // so the panel moves between black and midnight blue instead of sitting at one flat colour.
@@ -2522,6 +2536,7 @@ function makeView() {
       for (const kind in drifts) drifts[kind].forEach(layer => {
         layer.tex.offset.x = (layer.tex.offset.x + 1 + dt * layer.speed[0]) % 1;
         layer.tex.offset.y = (layer.tex.offset.y + 1 + dt * layer.speed[1]) % 1;
+        if (layer.twinkle) layer.material.opacity = layer.base * (0.6 + 0.4 * Math.sin(now / 520 + layer.phase));   // the two layers twinkle out of step
       });
       cloud.tex.offset.x = (cloud.tex.offset.x + dt * 0.012) % 1;
       cloud.tex.offset.y = (cloud.tex.offset.y + 1 - dt * 0.007) % 1;
