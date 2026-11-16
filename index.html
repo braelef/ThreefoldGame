@@ -122,6 +122,23 @@ select, .btn { font: inherit; color: var(--ink); background: var(--panel); borde
 #end-actions .m-btn { min-width: 150px; }
 #endgame.show #end-title { animation: end-title 1.5s 1.3s cubic-bezier(.2, .8, .2, 1) forwards; }
 #endgame.show #end-actions { animation: end-actions .9s 3.1s ease forwards; }
+/* What you won with: a picture of the card's image beside a short piece about it. */
+#end-info { display: grid; grid-template-columns: 116px 1fr; gap: 20px; align-items: start; width: min(100%, 600px); max-height: 42vh; overflow: auto;
+  padding: 18px 22px 16px; text-align: left; border-radius: 16px; border: 1px solid var(--m-line); background: rgba(10, 13, 26, .82);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, .45); opacity: 0; }
+#endgame.show #end-info { animation: end-actions 1s 2.3s ease forwards; }
+#endgame.show #end-actions.later { animation-delay: 3.6s; }
+.info-pic { width: 116px; height: 116px; border-radius: 50%; display: flex; align-items: center; justify-content: center; position: relative;
+  background: radial-gradient(circle, var(--info-color) 0%, rgba(0, 0, 0, 0) 70%); }
+.info-pic img { width: 112px; height: 112px; object-fit: contain; }
+.info-pic img.film { width: 100px; height: 100px; object-fit: cover; border-radius: 50%; border: 2px solid rgba(255,255,255,.7); }
+.info-num { position: absolute; font: 700 2.6rem/1 "Cinzel", Georgia, serif; color: #fff; text-shadow: 0 2px 10px rgba(0,0,0,.6); }
+#end-info h3 { margin: 2px 0 8px; display: flex; align-items: center; gap: 10px; font-family: "Cinzel", Georgia, serif; font-weight: 600; font-size: 1.2rem; color: var(--m-gold); }
+.info-chip { min-width: 28px; height: 26px; padding: 0 6px; border-radius: 7px; display: inline-flex; align-items: center; justify-content: center;
+  font: 700 .95rem/1 system-ui, -apple-system, "Segoe UI", sans-serif; color: #fff; background: var(--info-color); }
+.info-body p { margin: 0 0 8px; font-size: .98rem; line-height: 1.6; color: var(--m-ink); max-width: 56ch; }
+.info-body p.placeholder { color: var(--m-soft); font-style: italic; }
+@media (max-width: 520px) { #end-info { grid-template-columns: 1fr; justify-items: center; text-align: center; } #end-info h3 { justify-content: center; } }
 @keyframes end-dark { to { background: rgba(3, 5, 12, .86); } }
 @keyframes end-title { from { opacity: 0; transform: scale(.86); letter-spacing: .32em; filter: blur(8px); } to { opacity: 1; transform: none; letter-spacing: .08em; filter: none; } }
 @keyframes end-actions { from { opacity: 0; visibility: visible; transform: translateY(10px); } to { opacity: 1; visibility: visible; transform: none; } }
@@ -150,6 +167,7 @@ select, .btn { font: inherit; color: var(--ink); background: var(--panel); borde
 .seg input { position: absolute; opacity: 0; pointer-events: none; }
 .seg label { padding: 10px 4px 8px; text-align: center; cursor: pointer; font-weight: 600; font-size: .95rem; border-left: 1px solid var(--m-line); }
 .seg label:first-of-type { border-left: 0; }
+.seg.five label { font-size: .8rem; padding-left: 2px; padding-right: 2px; }
 .seg label:hover { background: rgba(226, 192, 108, .12); }
 .seg input:checked + label { background: var(--m-gold); color: #1c1505; }
 .seg input:focus-visible + label, .m-btn:focus-visible { outline: 3px solid #fff; outline-offset: -3px; }
@@ -283,6 +301,13 @@ summary { cursor: pointer; color: var(--ink); font-weight: 600; }
     </div>
     <div id="endgame" role="dialog" aria-modal="true" aria-labelledby="end-title">
       <h2 id="end-title">You Win</h2>
+      <article id="end-info" hidden>
+        <div class="info-pic" aria-hidden="true"><img alt=""><span class="info-num"></span></div>
+        <div class="info-text">
+          <h3><span class="info-chip"></span><span class="info-name"></span></h3>
+          <div class="info-body"></div>
+        </div>
+      </article>
       <div id="end-actions">
         <button type="button" class="m-btn primary" id="end-new">New game</button>
         <button type="button" class="m-btn" id="end-menu">Menu</button>
@@ -350,11 +375,12 @@ summary { cursor: pointer; color: var(--ink); font-weight: 600; }
             </fieldset>
             <fieldset>
               <legend>Computer players</legend>
-              <div class="seg">
+              <div class="seg five">
                 <input type="radio" name="llevel" id="llevel-normal" value="normal"><label for="llevel-normal">Normal</label>
                 <input type="radio" name="llevel" id="llevel-hard" value="hard"><label for="llevel-hard">Hard</label>
                 <input type="radio" name="llevel" id="llevel-expert" value="expert"><label for="llevel-expert">Expert</label>
                 <input type="radio" name="llevel" id="llevel-master" value="master"><label for="llevel-master">Master</label>
+                <input type="radio" name="llevel" id="llevel-impossible" value="impossible"><label for="llevel-impossible">Impossible</label>
               </div>
             </fieldset>
           </div>
@@ -393,7 +419,7 @@ summary { cursor: pointer; color: var(--ink); font-weight: 600; }
             <p>In Simple mode the first player to collect three trios wins. Spicy mode needs only two trios, although they have to be connected, which means their numbers either add up to 7 or differ by 7. That gives eight connected pairs: 1 and 6, 2 and 5, 3 and 4, 1 and 8, 2 and 9, 3 and 10, 4 and 11, and 5 and 12. In a Spicy game each card shows the numbers it connects with beneath its name. Whichever mode you choose, a trio of 7s wins the game at once.</p>
 
             <h3>Playing on your own</h3>
-            <p>In single player you face two to five computer players, and the difficulty sets how much they remember and how long revealed cards stay face up. On Normal they forget most of what they see and you get the longest look at each reveal, while on Master they remember every card that has been turned over and the cards flip back quickly.</p>
+            <p>In single player you face two to five computer players, and the difficulty sets how much they remember and how long revealed cards stay face up. On Normal they forget nearly everything they see and you get the longest look at each reveal, while on Impossible they remember every card that has been turned over and the cards flip back quickly.</p>
 
             <h3>Playing with friends</h3>
             <p>To play online, choose Multiplayer, enter your name, and either host a game or join one using the five-character room code your host shares with you. Opening the invite link a host sends will fill the code in for you. The host decides how many seats there are, and any seat that no person takes goes to a computer player. Everyone in the room can hear each other while they play, and the Mute button at the top of the screen switches your microphone off and on. When a guest leaves partway through, a computer player takes over their seat so the game can carry on, but when the host leaves, the game ends for everyone.</p>
@@ -407,11 +433,12 @@ summary { cursor: pointer; color: var(--ink); font-weight: 600; }
           <h2 id="setup-title">Single player</h2>
           <fieldset>
             <legend>Difficulty</legend>
-            <div class="seg">
+            <div class="seg five">
               <input type="radio" name="level" id="level-normal" value="normal"><label for="level-normal">Normal</label>
               <input type="radio" name="level" id="level-hard" value="hard"><label for="level-hard">Hard</label>
               <input type="radio" name="level" id="level-expert" value="expert"><label for="level-expert">Expert</label>
               <input type="radio" name="level" id="level-master" value="master"><label for="level-master">Master</label>
+              <input type="radio" name="level" id="level-impossible" value="impossible"><label for="level-impossible">Impossible</label>
             </div>
             <p class="menu-hint" id="hint-level"></p>
           </fieldset>
@@ -504,6 +531,22 @@ Object.assign(CARD_FACES[12], { name: 'Threefold Flame', color: '#6f7fd8', glow:
 const SPIN = { windUp: 6, pairWindUp: 3, runDown: 2.2, top: 13 };
 // Default fire colours as "red, green, blue": the hot core, the body of the flame, and the tips. A card can set its own.
 const FIRE = { size: 1.7, core: '150, 215, 255', mid: '50, 140, 255', tip: '20, 50, 215', ember: 0x2f8cff };
+// The short piece shown when you win, about one of the trios you won with (the winning one when it has text).
+// Write plain text; leave a blank line between paragraphs. A number left empty shows a placeholder for now.
+const CARD_INFO = {
+  1: '',    // Throat Chakra
+  2: '',    // Crown Chakra
+  3: '',    // Heart Chakra
+  4: '',    // Root Chakra
+  5: '',    // Third Eye Chakra
+  6: '',    // Solar Plexus Chakra
+  7: '',    // Seat of the Soul
+  8: '',    // Ruby Ray
+  9: '',    // Holy Spirit
+  10: '',
+  11: '',   // Victory
+  12: ''    // Threefold Flame
+};
 // Fonts to try on the cards. The first is the default; the picker in the page switches between them.
 // Text is drawn in the lightest weight each font has.
 const CARD_FONTS = ['Josefin Sans', 'Raleway', 'Quicksand', 'Poiret One', 'Cormorant Garamond', 'Cinzel', 'Marcellus', 'Forum', 'Philosopher', 'Playfair Display', 'Georgia'];
@@ -546,7 +589,7 @@ const CARD_FINISH = { gloss: 0.7, weave: 0, border: 0.05, paper: '#fdfcf7', pape
 /*ENGINE-START*/
 const DEAL = { 3: [9, 9], 4: [7, 8], 5: [6, 6], 6: [5, 6] }; // players: [cards each, cards in the middle]
 const NAMES = ['You', 'Mira', 'Tobin', 'Sol', 'Wren', 'Kai'];
-const MEMORY = { normal: 0.25, hard: 0.5, expert: 0.8, master: 1 }; // chance a computer player remembers a card it sees
+const MEMORY = { normal: 0.1, hard: 0.25, expert: 0.5, master: 0.8, impossible: 1 }; // chance a computer player remembers a card it sees
 
 const connected = n => [7 - n, n - 7, n + 7].filter(x => x >= 1 && x <= 12);
 
@@ -685,10 +728,11 @@ let menuOpen = true, gameStarted = false;
 // Timing per difficulty, in milliseconds. ai: pause before each computer reveal. resolve: how long revealed cards
 // stay face up once a turn is decided, before they flip back or are collected. Easier levels give you longer to look.
 const SPEED = {
-  normal: { ai: 2200, resolve: 4200 },
-  hard:   { ai: 1700, resolve: 3000 },
-  expert: { ai: 1300, resolve: 1900 },
-  master: { ai: 1100, resolve: 1500 }
+  normal:     { ai: 2400, resolve: 5000 },
+  hard:       { ai: 2200, resolve: 4200 },
+  expert:     { ai: 1700, resolve: 3000 },
+  master:     { ai: 1300, resolve: 1900 },
+  impossible: { ai: 1100, resolve: 1500 }
 };
 const PACE = { scale: 1 };   // multiplies every wait; 1 is normal speed
 const pace = kind => SPEED[S.level][kind] * PACE.scale;
@@ -729,6 +773,33 @@ function play(o) {
 }
 
 /* ---------- End of game ---------- */
+// Picks one of your trios to tell you about, preferring the one that won the game and any that have text written.
+function fillEndInfo(won) {
+  const box = $('end-info');
+  const trios = won ? S.players[0].trios.slice().reverse() : [];
+  box.hidden = !trios.length;
+  $('end-actions').classList.toggle('later', !box.hidden);
+  if (box.hidden) return;
+  const n = trios.find(t => CARD_INFO[t]) || trios[0], f = CARD_FACES[n];
+  box.style.setProperty('--info-color', f.color);
+  const img = box.querySelector('img'), pic = f.emblem || f.poster;
+  img.hidden = !pic;
+  if (pic) { img.src = pic; img.className = f.emblem ? '' : 'film'; }
+  box.querySelector('.info-num').textContent = pic ? '' : f.label;
+  box.querySelector('.info-chip').textContent = f.label;
+  box.querySelector('.info-name').textContent = f.name || `The ${f.label}s`;
+  const body = box.querySelector('.info-body');
+  body.textContent = '';
+  const text = (CARD_INFO[n] || '').trim();
+  (text ? text.split(/\n\s*\n/) : ['A few words about this card will appear here.']).forEach(para => {
+    const p = document.createElement('p');
+    p.textContent = para.trim();
+    if (!text) p.className = 'placeholder';
+    body.appendChild(p);
+  });
+  box.scrollTop = 0;
+}
+
 let endFocus = null;
 function showEnd() {
   const el = $('endgame');
@@ -736,6 +807,7 @@ function showEnd() {
   const won = S.winner === 0;
   $('end-title').textContent = won ? 'You Win' : `${S.players[S.winner].name} Wins`;
   el.classList.toggle('lost', !won);
+  fillEndInfo(won);
   // In someone else's game only the host can deal again.
   $('end-new').hidden = NET.mode === 'guest';
   $('end-note').hidden = NET.mode !== 'guest';
@@ -918,10 +990,11 @@ function startNew() {
 /* ---------- Start menu ---------- */
 const HINTS = {
   level: {
-    normal: 'Opponents forget most of the cards they see. Revealed cards stay face up the longest.',
-    hard: 'Opponents forget about half of the cards they see. Revealed cards flip back a little sooner.',
-    expert: 'Opponents remember most of the cards they see. Revealed cards flip back quickly.',
-    master: 'Opponents remember every card they see. Revealed cards flip back fastest.'
+    normal: 'Opponents forget nearly everything they see. Revealed cards stay face up the longest.',
+    hard: 'Opponents forget most of the cards they see. Revealed cards stay face up a long time.',
+    expert: 'Opponents forget about half of the cards they see. Revealed cards flip back a little sooner.',
+    master: 'Opponents remember most of the cards they see. Revealed cards flip back quickly.',
+    impossible: 'Opponents remember every card they see. Revealed cards flip back fastest.'
   },
   mode: { simple: 'Win with any three trios, or with the trio of 7s.', spicy: 'Win with two connected trios, whose numbers add up to 7 or differ by 7, or with the trio of 7s.' }
 };
