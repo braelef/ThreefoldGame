@@ -487,30 +487,32 @@ for (let n = 1; n <= 12; n++) {
 // and pointing at it winds it up into a blur wreathed in fire (see SPIN and FIRE).
 // glow: the faint light around the pointer while it is over that card.
 // sky: the card's own night-sky colours (see CARD_SKY). fire: its own flame colours (see FIRE).
+// symmetry: how many times in one turn the emblem looks exactly the same (8 for the throat's eight petals). A
+// spinning emblem always comes to rest at one of those positions, upright; 1 means only after a full turn.
 // 1, Throat: blue, on drifting stars and midnight-blue clouds, with blue fire.
-Object.assign(CARD_FACES[1], { name: 'Throat Chakra', color: '#1b63ad', emblem: 'assets/throat.webp', glow: '#8fd0ff' });
+Object.assign(CARD_FACES[1], { symmetry: 8, name: 'Throat Chakra', color: '#1b63ad', emblem: 'assets/throat.webp', glow: '#8fd0ff' });
 // 2, Crown: golden yellow, on a warm dark sky with gold clouds and gold-tinted stars, with golden fire.
-Object.assign(CARD_FACES[2], { name: 'Crown Chakra', color: '#c18d0a', emblem: 'assets/crown.webp', glow: '#ffd86b',
+Object.assign(CARD_FACES[2], { symmetry: 1, name: 'Crown Chakra', color: '#c18d0a', emblem: 'assets/crown.webp', glow: '#ffd86b',
   sky: { top: '#0a0600', bottom: '#1f1403', haze: 0.45, hazeColor: '#ffc93c', cloud: '200, 135, 18', starTint: '#ffe7a0' },
   fire: { core: '255, 250, 220', mid: '255, 205, 90', tip: '232, 140, 20', ember: 0xffc040 } });
 // 3, Heart: rose pink, on a deep plum sky with rose clouds and little hearts floating upward, with pink fire.
-Object.assign(CARD_FACES[3], { name: 'Heart Chakra', color: '#c4467f', emblem: 'assets/heart.webp', glow: '#ff9fd0', backdrop: 'hearts',
+Object.assign(CARD_FACES[3], { symmetry: 6, name: 'Heart Chakra', color: '#c4467f', emblem: 'assets/heart.webp', glow: '#ff9fd0', backdrop: 'hearts',
   sky: { top: '#0b0308', bottom: '#240a19', haze: 0.45, hazeColor: '#ff86bd', cloud: '205, 70, 135', starTint: '#ffd9ea' },
   fire: { core: '255, 240, 247', mid: '255, 150, 202', tip: '222, 60, 142', ember: 0xff6fae } });
 // 4, Root: white. Its emblem floats over drifting white petals on a soft dusk sky and burns with white fire.
-Object.assign(CARD_FACES[4], { name: 'Root Chakra', color: '#93a1b8', emblem: 'assets/root.webp', glow: '#ffffff', backdrop: 'petals',
+Object.assign(CARD_FACES[4], { symmetry: 4, name: 'Root Chakra', color: '#93a1b8', emblem: 'assets/root.webp', glow: '#ffffff', backdrop: 'petals',
   sky: { top: '#3f4963', bottom: '#8490a9', haze: 0.4, hazeColor: '#ffffff' },
   fire: { core: '255, 255, 255', mid: '226, 234, 255', tip: '160, 178, 235', ember: 0xdde6ff } });
 // 5, Third Eye: emerald green, on a deep green-black sky with emerald clouds and twinkling sparkles, with green fire.
-Object.assign(CARD_FACES[5], { name: 'Third Eye Chakra', color: '#1f9a55', emblem: 'assets/third-eye.webp', glow: '#8dffbf', backdrop: 'sparkles',
+Object.assign(CARD_FACES[5], { symmetry: 1, name: 'Third Eye Chakra', color: '#1f9a55', emblem: 'assets/third-eye.webp', glow: '#8dffbf', backdrop: 'sparkles',
   sky: { top: '#010805', bottom: '#041c11', haze: 0.42, hazeColor: '#4dff9a', cloud: '20, 150, 80', starTint: '#d6ffe6' },
   fire: { core: '236, 255, 244', mid: '110, 255, 170', tip: '20, 170, 90', ember: 0x3dff8f } });
 // 6, Solar Plexus: purple flecked with gold, on a deep purple sky with purple clouds and little gold fleurs-de-lis, with gold-and-purple fire.
-Object.assign(CARD_FACES[6], { name: 'Solar Plexus Chakra', color: '#7a2fb0', emblem: 'assets/solar-plexus.webp', glow: '#ffd36b', backdrop: 'fleurs',
+Object.assign(CARD_FACES[6], { symmetry: 10, name: 'Solar Plexus Chakra', color: '#7a2fb0', emblem: 'assets/solar-plexus.webp', glow: '#ffd36b', backdrop: 'fleurs',
   sky: { top: '#07020d', bottom: '#1d0833', haze: 0.45, hazeColor: '#e9b6ff', cloud: '115, 45, 175', starTint: '#ffd98a' },
   fire: { core: '255, 246, 214', mid: '255, 196, 92', tip: '150, 60, 220', ember: 0xc77dff } });
 // 7, Seat of the Soul: violet, on a deep violet-black sky with violet clouds and little violet flames rising, with violet fire.
-Object.assign(CARD_FACES[7], { name: 'Seat of the Soul', color: '#8b2fc4', emblem: 'assets/seat-of-the-soul.webp', glow: '#d79bff', backdrop: 'flames',
+Object.assign(CARD_FACES[7], { symmetry: 6, name: 'Seat of the Soul', color: '#8b2fc4', emblem: 'assets/seat-of-the-soul.webp', glow: '#d79bff', backdrop: 'flames',
   sky: { top: '#05010b', bottom: '#170528', haze: 0.42, hazeColor: '#c46bff', cloud: '125, 40, 190', starTint: '#ecd9ff' },
   fire: { core: '250, 240, 255', mid: '205, 130, 255', tip: '130, 40, 215', ember: 0xb45cff } });
 // A card with a video shows a still frame at rest. The video plays while you point at the card, and once two of that card are revealed.
@@ -530,7 +532,9 @@ Object.assign(CARD_FACES[12], { name: 'Threefold Flame', color: '#6f7fd8', glow:
 // An emblem winds up while you point at it, and whenever two of its cards are revealed as a pair.
 // windUp: seconds to reach full speed under the pointer. pairWindUp: the same for a revealed pair. runDown: seconds to stop.
 // top: full speed in turns per second. The emblem smears into a blur and catches fire as it speeds up.
-const SPIN = { windUp: 6, pairWindUp: 3, runDown: 2.2, top: 13 };
+// pile: turns per second for the emblems on won trios, which never stop. settle: the slowest speed (radians per
+// second) at which a stopping emblem glides on to its upright resting place.
+const SPIN = { windUp: 6, pairWindUp: 3, runDown: 2.2, top: 13, pile: 0.22, settle: 1.6 };
 // Default fire colours as "red, green, blue": the hot core, the body of the flame, and the tips. A card can set its own.
 const FIRE = { size: 1.7, core: '150, 215, 255', mid: '50, 140, 255', tip: '20, 50, 215', ember: 0x2f8cff };
 // The short piece shown when you win, about one of the trios you won with (the winning one when it has text).
@@ -2541,7 +2545,7 @@ function makeView() {
         flare.visible = false;
         body.add(flare);
       }
-      cards[id] = { pivot, body, halo, playable: false, emblem, blur, fire, ember, rev: 0, flare, video: videos[n] || null, spin: 0, spinTarget: 0, flash: 0, flashed: false, meshes: [face, rear], y: 0, target: null };
+      cards[id] = { pivot, body, halo, playable: false, emblem, blur, fire, ember, rev: 0, park: null, flare, video: videos[n] || null, spin: 0, spinTarget: 0, flash: 0, flashed: false, meshes: [face, rear], y: 0, target: null };
     }
   }
 
@@ -2610,7 +2614,7 @@ function makeView() {
         for (let k = 0; k < 3; k++) {
           cards[(n - 1) * 3 + k].target = {
             x: base.x + base.dx * i * step + (k - 1) * 0.13, y: 0.02 + k * 0.04,
-            z: base.z + base.dz * i * step, yaw: (1 - k) * 0.12, face: true, s: 0.55
+            z: base.z + base.dz * i * step, yaw: (1 - k) * 0.12, face: true, s: 0.55, pile: true
           };
         }
       });
@@ -2870,8 +2874,23 @@ function makeView() {
         const paired = c.spinTarget === 1;
         const winding = ((hov && t.face) || paired) && !reduceMotion;
         c.rev = Math.min(1, Math.max(0, c.rev + (winding ? dt / (paired ? SPIN.pairWindUp : SPIN.windUp) : -dt / SPIN.runDown)));
-        const speed = Math.pow(c.rev, 2.2) * SPIN.top * 6.2832;   // radians per second
-        if (speed > 0.01 && !reduceMotion) c.emblem.rotation.z -= speed * dt;
+        const step = 6.2832 / (CARD_FACES[Math.floor(id / 3) + 1].symmetry || 1);
+        let speed = Math.pow(c.rev, 2.2) * SPIN.top * 6.2832;   // radians per second
+        if (t.pile && !reduceMotion) speed = Math.max(speed, SPIN.pile * 6.2832);   // won trios keep turning
+        const e = c.emblem.rotation;
+        if (reduceMotion) {
+          e.z = 0;
+        } else if (winding || t.pile || speed > Math.max(SPIN.settle, step * 0.6)) {
+          e.z -= speed * dt;
+          c.park = null;
+        } else if (c.park !== null || e.z !== 0) {
+          // Coming to rest: glide on to the next upright position ahead and stop exactly on it.
+          if (c.park === null) c.park = Math.floor(e.z / step + 1e-6) * step;
+          const gap = e.z - c.park;
+          const v = Math.min(Math.max(speed, SPIN.settle, step * 0.6), 4 * gap + 0.06);   // a longer way to go glides faster
+          e.z -= v * dt;
+          if (e.z <= c.park + 1e-4) { e.z = 0; c.park = null; }   // every upright position looks the same, so rest at 0
+        }
         // Sharp picture, then a short smear, then a full blur as it gets faster.
         const smear = smooth(0.3, 0.6, c.rev), ring = smooth(0.6, 0.92, c.rev), heat = smooth(0.3, 1, c.rev);
         const bump = 1 + 0.24 * c.flash;
@@ -2978,6 +2997,7 @@ function makeView() {
         c.body.rotation.z = Math.PI;
         c.y = id * 0.012;
         c.target = null;
+        if (c.emblem) { c.emblem.rotation.z = 0; c.rev = 0; c.park = null; }
       });
     },
     sync() { layout(); updateLabels(); updateSpin(); },
