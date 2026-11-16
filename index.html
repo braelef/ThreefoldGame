@@ -521,6 +521,8 @@ Object.assign(CARD_FACES[9], { name: 'Holy Spirit', color: '#b6479a', glow: '#ff
   sky: { top: '#1a0620', bottom: '#3d0e44', haze: 0 } });
 Object.assign(CARD_FACES[8], { name: 'Ruby Ray', color: '#c0174f', glow: '#ff5c8f', video: 'assets/ruby-ray.mp4', poster: 'assets/ruby-ray.jpg',
   sky: { top: '#2a0410', bottom: '#5e0b26', haze: 0 } });
+Object.assign(CARD_FACES[10], { name: 'Rosary', color: '#2f63c8', glow: '#a9dcff', video: 'assets/rosary.mp4', poster: 'assets/rosary.jpg',
+  sky: { top: '#071233', bottom: '#1b2f6e', haze: 0 } });
 Object.assign(CARD_FACES[11], { name: 'Victory', color: '#c9980c', glow: '#ffe08a', video: 'assets/victory.mp4', poster: 'assets/victory.jpg',
   sky: { top: '#2b1b02', bottom: '#5c3e07', haze: 0 } });
 Object.assign(CARD_FACES[12], { name: 'Threefold Flame', color: '#6f7fd8', glow: '#ffffff', video: 'assets/threefold-flame.mp4', poster: 'assets/threefold-flame.jpg',
@@ -543,7 +545,7 @@ const CARD_INFO = {
   7: '',    // Seat of the Soul
   8: '',    // Ruby Ray
   9: '',    // Holy Spirit
-  10: '',
+  10: '',   // Rosary
   11: '',   // Victory
   12: ''    // Threefold Flame
 };
@@ -2423,8 +2425,11 @@ function makeView() {
     el.muted = true; el.loop = true; el.playsInline = true; el.preload = 'auto';
     el.setAttribute('muted', ''); el.setAttribute('playsinline', '');
     el.src = f.video;
-    const film = fitPanel(new THREE.VideoTexture(el));
-    const v = { material, el, wanted: false, hover: false, playing: false, holdUntil: 0,
+    // A plain texture fed by hand: a new picture goes to the graphics card only when the video has a new frame
+    // (the library's own video texture re-sends it on every screen refresh, even while paused).
+    const film = fitPanel(new THREE.Texture(el));
+    film.minFilter = THREE.LinearFilter; film.magFilter = THREE.LinearFilter; film.generateMipmaps = false;
+    const v = { material, el, film, frameTime: -1, wanted: false, hover: false, lastHover: 0, playing: false, holdUntil: 0,
       play() {
         if (v.playing) return;
         v.playing = true;
@@ -2434,7 +2439,10 @@ function makeView() {
       pause() { v.playing = false; el.pause(); }
     };
     // Switch from the still to the film only once the film really has a frame to show.
-    el.addEventListener('playing', () => { material.map = film; material.visible = true; material.needsUpdate = true; });
+    el.addEventListener('playing', () => {
+      if (material.map === film) return;
+      material.map = film; material.visible = true; material.needsUpdate = true;
+    });
     if (f.poster) {
       emblemLoader.load(f.poster, tex => {
         if (material.map) return;
@@ -2751,7 +2759,7 @@ function makeView() {
 
   // Magnifier: a large copy of the face-up table card under the pointer. Your held cards already grow instead.
   const peekEl = $('peek'), peekCv = peekEl.querySelector('canvas'), pg = peekCv.getContext('2d');
-  let peekId = -1;
+  let peekId = -1, peekTime = -1;
   pg.scale(peekCv.width / TW, peekCv.height / TH);
   const posters = {};
   function peekPick(ev) {
@@ -2770,7 +2778,8 @@ function makeView() {
   // Paints the card as it looks on the table: the printed card, then the sky, drifting layer, emblem or video, and lettering.
   function drawPeek(fresh) {
     const n = Math.floor(peekId / 3) + 1, f = CARD_FACES[n], v = videos[n];
-    if (!fresh && !(v && v.playing)) return;   // only a playing video needs repainting
+    if (!fresh && !(v && v.playing && v.el.currentTime !== peekTime)) return;   // only a new video frame needs repainting
+    peekTime = v ? v.el.currentTime : -1;
     pg.clearRect(0, 0, TW, TH);
     pg.drawImage(faces[n].cv, 0, 0, TW, TH);
     if (!f.emblem && !f.video) return;
@@ -2915,10 +2924,15 @@ function makeView() {
       for (const rgb in cloud.materials) cloud.materials[rgb].opacity = swell;
     }
     // A video stops once its cards are no longer a matching pair, a few seconds later if they made a trio.
-    for (const n in videos) videos[n].hover = false;
+    // Pointing at a video card plays it. It keeps playing until the pointer has been off it for a moment, so the
+    // edge of a card or the overlap between cards in your hand can't stop and restart it.
     const under = hoverId >= 0 ? cards[hoverId] : null;
-    if (under && under.video && under.target && under.target.face && !reduceMotion) { under.video.hover = true; under.video.play(); }   // pointing at a video card plays it
-    for (const n in videos) { const v = videos[n]; if (v.playing && !v.wanted && !v.hover && now > v.holdUntil) v.pause(); }
+    if (under && under.video && under.target && under.target.face && !reduceMotion) { under.video.lastHover = now; under.video.play(); }
+    for (const n in videos) {
+      const v = videos[n];
+      if (v.playing && !v.wanted && now - v.lastHover > 600 && now > v.holdUntil) v.pause();
+      if (v.el.readyState >= 2 && v.el.currentTime !== v.frameTime) { v.frameTime = v.el.currentTime; v.film.needsUpdate = true; }
+    }
     renderer.render(scene, camera);
   }
 
