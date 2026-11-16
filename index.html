@@ -176,7 +176,7 @@ select, .btn { font: inherit; color: var(--ink); background: var(--panel); borde
 #lobby-roster .mic.talk { background: rgba(143, 208, 255, .25); box-shadow: 0 0 10px rgba(143, 208, 255, .7); }
 .menu-card #lobby-wait:empty, .menu-card #lobby-mic:empty { display: none; }
 #mic-btn.off { color: var(--muted); }
-#toast { position: absolute; left: 50%; top: 14px; z-index: 7; max-width: min(90%, 460px); transform: translate(-50%, -8px); opacity: 0; pointer-events: none;
+#toast { position: absolute; left: 50%; bottom: 14px; z-index: 7; max-width: min(90%, 460px); transform: translate(-50%, 8px); opacity: 0; pointer-events: none;
   padding: 8px 14px 6px; border-radius: 999px; background: rgba(10, 13, 26, .88); color: #fbf6e9; border: 1px solid rgba(226, 192, 108, .45);
   font-size: .9rem; text-align: center; transition: opacity .25s, transform .25s; }
 #toast.show { opacity: 1; transform: translate(-50%, 0); }
@@ -185,6 +185,31 @@ select, .btn { font: inherit; color: var(--ink); background: var(--panel); borde
   -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round'%3E%3Crect x='9' y='3' width='6' height='11' rx='3'/%3E%3Cpath d='M5 11a7 7 0 0 0 14 0M12 18v3M3 3l18 18'/%3E%3C/svg%3E") center / contain no-repeat;
   mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round'%3E%3Crect x='9' y='3' width='6' height='11' rx='3'/%3E%3Cpath d='M5 11a7 7 0 0 0 14 0M12 18v3M3 3l18 18'/%3E%3C/svg%3E") center / contain no-repeat; }
 #end-note { color: var(--m-soft); }
+/* Number badges: a readable number over every face-up card on the table, whatever its size. */
+.badge { position: absolute; left: 0; top: 0; min-width: 30px; height: 30px; padding: 0 7px; display: flex; align-items: center; justify-content: center;
+  border-radius: 999px; border: 2px solid #fff; color: #fff; font: 700 1.05rem/1 system-ui, -apple-system, "Segoe UI", sans-serif; font-variant-numeric: tabular-nums;
+  text-shadow: 0 1px 2px rgba(0,0,0,.5); box-shadow: 0 2px 6px rgba(0,0,0,.45); will-change: transform; pointer-events: none; }
+.badge.small { min-width: 22px; height: 22px; padding: 0 5px; font-size: .78rem; border-width: 1.5px; }
+/* This turn's reveals, large, across the top of the table. */
+#turnbar { position: absolute; left: 50%; top: 10px; z-index: 3; display: flex; align-items: center; gap: 10px; padding: 8px 12px; pointer-events: none;
+  border-radius: 14px; background: rgba(10, 13, 26, .78); border: 1px solid rgba(255, 255, 255, .16); color: #fff;
+  transform: translate(-50%, -12px); opacity: 0; transition: opacity .2s, transform .2s; max-width: calc(100% - 20px); }
+#turnbar.show { opacity: 1; transform: translate(-50%, 0); }
+#turnbar .tb-who { font-weight: 700; font-size: .9rem; margin-right: 2px; white-space: nowrap; }
+.tb-card { width: 56px; height: 72px; border-radius: 9px; border: 2px solid #fff; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 2px; box-shadow: 0 3px 10px rgba(0,0,0,.4); text-shadow: 0 1px 3px rgba(0,0,0,.55); }
+.tb-card b { font: 700 1.9rem/1 system-ui, -apple-system, "Segoe UI", sans-serif; }
+.tb-card small { font-size: .56rem; font-weight: 600; text-align: center; line-height: 1.1; padding: 0 3px; max-width: 100%; overflow: hidden; }
+.tb-card.empty { border-style: dashed; border-color: rgba(255,255,255,.45); color: rgba(255,255,255,.55); box-shadow: none; }
+#turnbar .tb-result { font-weight: 700; font-size: .95rem; padding: 4px 10px 3px; border-radius: 999px; white-space: nowrap; }
+#turnbar.miss .tb-result { background: rgba(255, 90, 90, .22); color: #ffb3b3; }
+#turnbar.trio .tb-result { background: rgba(255, 215, 106, .25); color: #ffe7a0; }
+#turnbar.trio { border-color: rgba(255, 215, 106, .7); box-shadow: 0 0 22px rgba(255, 215, 106, .35); }
+@media (max-width: 520px) { .tb-card { width: 44px; height: 58px; } .tb-card b { font-size: 1.5rem; } .tb-card small { display: none; } }
+/* Magnified card beside the pointer. */
+#peek { position: absolute; left: 0; top: 0; z-index: 4; width: 190px; pointer-events: none; opacity: 0; transition: opacity .15s; will-change: transform; }
+#peek.show { opacity: 1; }
+#peek canvas { display: block; width: 100%; height: auto; filter: drop-shadow(0 10px 22px rgba(0,0,0,.55)); }
 #moves { display: flex; flex-wrap: wrap; gap: 6px; }
 #moves:not(:focus-within):not(.open) { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 #moves button { font: inherit; font-size: .8rem; padding: 3px 8px; border-radius: 6px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); }
@@ -213,6 +238,8 @@ summary { cursor: pointer; color: var(--ink); font-weight: 600; }
   <div id="stage">
     <canvas id="view" aria-label="Card table. Use the move buttons after this to play with a keyboard."></canvas>
     <div id="labels"></div>
+    <div id="turnbar" aria-hidden="true"></div>
+    <div id="peek" aria-hidden="true"><canvas width="640" height="896"></canvas></div>
     <div id="toast" role="status" aria-live="polite"></div>
     <div id="voices" hidden></div>
     <div id="burst" aria-hidden="true">
@@ -758,6 +785,45 @@ function tick() {
   }
 }
 
+// The bar across the top of the table: who is revealing, the cards turned so far, and how the turn ended.
+function renderTurnBar() {
+  const bar = $('turnbar');
+  const ids = gameStarted && S && !menuOpen ? S.revealed : [];
+  if (!ids.length) { bar.classList.remove('show'); bar.dataset.key = ''; return; }
+  const key = S.gid + ':' + S.turn + ':' + ids.join(',') + ':' + S.pending;
+  bar.classList.add('show');
+  if (bar.dataset.key === key) return;
+  bar.dataset.key = key;
+  bar.textContent = '';
+  bar.classList.toggle('miss', S.pending === 'miss');
+  bar.classList.toggle('trio', S.pending === 'trio');
+  const who = document.createElement('span');
+  who.className = 'tb-who';
+  who.textContent = S.current === 0 ? 'You' : S.players[S.current].name;
+  bar.appendChild(who);
+  const slots = S.pending ? ids.length : 3;
+  for (let i = 0; i < slots; i++) {
+    const tile = document.createElement('div');
+    if (i < ids.length) {
+      const c = cardById(S, ids[i]), f = CARD_FACES[c.n];
+      tile.className = 'tb-card';
+      tile.style.background = f.color;
+      const num = document.createElement('b'); num.textContent = f.label; tile.appendChild(num);
+      if (f.name) { const nm = document.createElement('small'); nm.textContent = f.name; tile.appendChild(nm); }
+    } else {
+      tile.className = 'tb-card empty';
+      const q = document.createElement('b'); q.textContent = '?'; tile.appendChild(q);
+    }
+    bar.appendChild(tile);
+  }
+  if (S.pending) {
+    const res = document.createElement('span');
+    res.className = 'tb-result';
+    res.textContent = S.pending === 'trio' ? 'Trio!' : 'No match';
+    bar.appendChild(res);
+  }
+}
+
 let burstTurn = -1;
 function render() {
   const over = S.winner !== null;
@@ -783,6 +849,7 @@ function render() {
     moves.appendChild(b);
   });
   $('new-game').disabled = NET.mode === 'guest';
+  renderTurnBar();
   if (View) View.sync();
 }
 
@@ -2042,8 +2109,10 @@ function makeView() {
   // The cloud and star layers are cut to the same rounded panel as the sky.
   const panelHalf = { x: CW / 2 - CW * INSET / TW, y: CH / 2 - CH * INSET / TH };
   const starGeo = new THREE.ShapeGeometry(roundedShape(panelHalf.x, panelHalf.y, CW * 16 / TW), 6);
+  const skyCanvases = {}, emblemSets = {};
   function skyMaterial(n) {
     const tex = skyTexture(n);
+    skyCanvases[n] = tex.image;
     tex.repeat.set(1 / (2 * panelHalf.x), 1 / (2 * panelHalf.y));   // the panel's own coordinates, stretched to cover the picture once
     tex.offset.set(0.5, 0.5);
     return overlayMaterial({ map: tex, transparent: false }, 1);
@@ -2074,6 +2143,7 @@ function makeView() {
     const set = { maps: null, groups: [] };
     const apply = group => ['sharp', 'arc', 'full'].forEach(k => { group[k].map = set.maps[k]; group[k].visible = true; group[k].needsUpdate = true; });
     loadImage(url, img => {
+      set.img = img;
       const sharp = new THREE.Texture(img);
       sharp.encoding = THREE.sRGBEncoding;
       sharp.anisotropy = renderer.capabilities.getMaxAnisotropy();
@@ -2148,7 +2218,7 @@ function makeView() {
     el.setAttribute('muted', ''); el.setAttribute('playsinline', '');
     el.src = f.video;
     const film = fitPanel(new THREE.VideoTexture(el));
-    const v = { material, wanted: false, hover: false, playing: false, holdUntil: 0,
+    const v = { material, el, wanted: false, hover: false, playing: false, holdUntil: 0,
       play() {
         if (v.playing) return;
         v.playing = true;
@@ -2184,6 +2254,7 @@ function makeView() {
     faces[n] = makeTexture();
     const faceMat = cardMaterial(faces[n].tex);
     const emblemMat = CARD_FACES[n].emblem ? emblemSet(CARD_FACES[n].emblem) : null;
+    if (emblemMat) emblemSets[n] = emblemMat;
     if (CARD_FACES[n].video) videos[n] = videoBackdrop(n);
     let skyMat = null, textMat = null;
     if (videos[n]) {
@@ -2270,7 +2341,7 @@ function makeView() {
     return [side(-1, 0.8), far(-5.2), far(0), far(5.2), side(1, 0.8)];
   }
   let seats = [], seatLabels = [];
-  const tagPool = [];
+  const tagPool = [], badgePool = [];
 
   function pileBase(p) {
     if (p === 0) return { x: 4.6, z: 3.6, dx: 1, dz: 0 };
@@ -2389,6 +2460,25 @@ function makeView() {
       t.dz = seat && seat.row ? 0.72 : 0;
     });
     cards.forEach((c, id) => { c.playable = OPTS.some(o => o.card.id === id); c.halo.visible = c.playable && !highlight.lift; });
+    // Number badges: each face-up card on the table, and one per won trio.
+    const marks = [];
+    S.middle.forEach(c => { if (c && c.up) marks.push({ id: c.id, n: c.n, small: false }); });
+    S.players.forEach(pl => pl.hand.forEach(c => { if (c.up) marks.push({ id: c.id, n: c.n, small: false }); }));
+    S.players.forEach(pl => pl.trios.forEach(n => marks.push({ id: (n - 1) * 3 + 1, n, small: true })));
+    while (badgePool.length < marks.length) {
+      const el = document.createElement('div');
+      labels.appendChild(el);
+      badgePool.push({ el, id: -1 });
+    }
+    badgePool.forEach((b, i) => {
+      const m = marks[i];
+      b.el.style.display = m ? '' : 'none';
+      if (!m) { b.id = -1; return; }
+      b.id = m.id;
+      b.el.className = 'badge' + (m.small ? ' small' : '');
+      b.el.style.background = CARD_FACES[m.n].color;
+      b.el.textContent = CARD_FACES[m.n].label;
+    });
   }
 
   // Camera: fixed angle. The table sits in the upper part of the view, leaving the bottom for your held cards.
@@ -2447,9 +2537,70 @@ function makeView() {
     return -1;
   }
   const optionFor = id => OPTS.find(x => x.card.id === id);
+
+  // Magnifier: a large copy of the face-up table card under the pointer. Your held cards already grow instead.
+  const peekEl = $('peek'), peekCv = peekEl.querySelector('canvas'), pg = peekCv.getContext('2d');
+  let peekId = -1;
+  pg.scale(peekCv.width / TW, peekCv.height / TH);
+  const posters = {};
+  function peekPick(ev) {
+    const r = canvas.getBoundingClientRect();
+    mouse.set(((ev.clientX - r.left) / r.width) * 2 - 1, -((ev.clientY - r.top) / r.height) * 2 + 1);
+    ray.setFromCamera(mouse, camera);
+    for (const hit of ray.intersectObjects(cardRoot.children, true)) {
+      let o = hit.object;
+      while (o && o.userData.id === undefined) o = o.parent;
+      if (!o) continue;
+      const t = cards[o.userData.id].target;
+      return t && t.face && !t.held ? o.userData.id : -1;   // the card in front decides
+    }
+    return -1;
+  }
+  // Paints the card as it looks on the table: the printed card, then the sky, drifting layer, emblem or video, and lettering.
+  function drawPeek(fresh) {
+    const n = Math.floor(peekId / 3) + 1, f = CARD_FACES[n], v = videos[n];
+    if (!fresh && !(v && v.playing)) return;   // only a playing video needs repainting
+    pg.clearRect(0, 0, TW, TH);
+    pg.drawImage(faces[n].cv, 0, 0, TW, TH);
+    if (!f.emblem && !f.video) return;
+    pg.save();
+    panelPath(pg, 0, 16); pg.clip();
+    if (skyCanvases[n]) pg.drawImage(skyCanvases[n], INSET, INSET, TW - 2 * INSET, TH - 2 * INSET);
+    if (f.emblem) {
+      const drift = drifts[f.backdrop], tile = drift ? drift[drift.length - 1].tex.image : starCanvas;
+      pg.globalAlpha = 0.85;
+      pg.fillStyle = pg.createPattern(tile, 'repeat');
+      pg.fillRect(INSET, INSET, TW - 2 * INSET, TH - 2 * INSET);
+      pg.globalAlpha = 1;
+      const img = emblemSets[n] && emblemSets[n].img;
+      if (img) pg.drawImage(img, TW / 2 - EMBLEM.size / 2, EMBLEM.y - EMBLEM.size / 2, EMBLEM.size, EMBLEM.size);
+    } else {
+      roundRect(pg, FILM.x, FILM.y, FILM.w, FILM.h, 10); pg.clip();
+      if (v && v.el.readyState >= 2 && v.playing) pg.drawImage(v.el, FILM.x, FILM.y, FILM.w, FILM.h);
+      else if (posters[n]) pg.drawImage(posters[n], FILM.x, FILM.y, FILM.w, FILM.h);
+      else loadImage(f.poster, img => { posters[n] = img; if (peekId >= 0 && Math.floor(peekId / 3) + 1 === n) drawPeek(true); });
+    }
+    pg.restore();
+    if (texts[n]) pg.drawImage(texts[n].cv, 0, 0, TW, TH);
+  }
+  function movePeek(ev) {
+    const id = ev.pointerType === 'mouse' ? peekPick(ev) : -1;
+    if (id !== peekId) {
+      peekId = id;
+      peekEl.classList.toggle('show', id >= 0);
+      if (id >= 0) drawPeek(true);
+    }
+    if (id < 0) return;
+    const r = stage.getBoundingClientRect(), w = peekEl.offsetWidth, h = peekEl.offsetHeight;
+    let x = ev.clientX - r.left + 26, y = ev.clientY - r.top - h - 14;
+    if (x + w > r.width - 8) x = ev.clientX - r.left - w - 26;   // flip to the left near the right edge
+    y = Math.max(8, Math.min(r.height - h - 8, y));
+    peekEl.style.transform = `translate(${x.toFixed(0)}px, ${y.toFixed(0)}px)`;
+  }
   const cursor = $('cursor');
   canvas.addEventListener('pointermove', ev => {
     hoverId = pick(ev);
+    movePeek(ev);
     if (ev.pointerType !== 'mouse') { stage.classList.remove('fine'); cursor.className = ''; return; }
     stage.classList.add('fine');
     const r = stage.getBoundingClientRect();
@@ -2459,7 +2610,7 @@ function makeView() {
     if (onEmblem) cursor.style.setProperty('--cursor-glow', CARD_FACES[Math.floor(hoverId / 3) + 1].glow || '#9fd4ff');
     cursor.className = 'on' + (c ? ' over' : '') + (onEmblem ? ' glow' : '');
   });
-  canvas.addEventListener('pointerleave', () => { hoverId = -1; cursor.className = ''; });
+  canvas.addEventListener('pointerleave', () => { hoverId = -1; cursor.className = ''; peekId = -1; peekEl.classList.remove('show'); });
   canvas.addEventListener('click', ev => {
     const o = optionFor(pick(ev));
     if (o) { hoverId = -1; play(o); }
@@ -2529,6 +2680,13 @@ function makeView() {
       const p = cards[t.id].pivot.position, lift = t.held ? 0.78 * cards[t.id].pivot.scale.x : 0;
       place(t.el, p.x + t.dx + camUp.x * lift, p.y + camUp.y * lift, p.z + t.dz + camUp.z * lift);
     });
+    // Badges sit on the far edge of their card, so the art stays visible.
+    badgePool.forEach(b => {
+      if (b.id < 0) return;
+      const pv = cards[b.id].pivot;
+      place(b.el, pv.position.x, pv.position.y + 0.05, pv.position.z - CH / 2 * pv.scale.x);
+    });
+    if (peekId >= 0) drawPeek(false);
     if (!reduceMotion) {
       starLayers.forEach((layer, i) => {
         layer.tex.offset.x = (layer.tex.offset.x + dt * layer.speed[0]) % 1;
