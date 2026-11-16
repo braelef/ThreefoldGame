@@ -437,8 +437,8 @@ Object.assign(CARD_FACES[4], { name: 'Root Chakra', color: '#93a1b8', emblem: 'a
 Object.assign(CARD_FACES[5], { name: 'Third Eye Chakra', color: '#1f9a55', emblem: 'assets/third-eye.webp', glow: '#8dffbf', backdrop: 'sparkles',
   sky: { top: '#010805', bottom: '#041c11', haze: 0.42, hazeColor: '#4dff9a', cloud: '20, 150, 80', starTint: '#d6ffe6' },
   fire: { core: '236, 255, 244', mid: '110, 255, 170', tip: '20, 170, 90', ember: 0x3dff8f } });
-// 6, Solar Plexus: purple flecked with gold, on a deep purple sky with purple clouds and little gold Maltese crosses, with gold-and-purple fire.
-Object.assign(CARD_FACES[6], { name: 'Solar Plexus Chakra', color: '#7a2fb0', emblem: 'assets/solar-plexus.webp', glow: '#ffd36b', backdrop: 'crosses',
+// 6, Solar Plexus: purple flecked with gold, on a deep purple sky with purple clouds and little gold fleurs-de-lis, with gold-and-purple fire.
+Object.assign(CARD_FACES[6], { name: 'Solar Plexus Chakra', color: '#7a2fb0', emblem: 'assets/solar-plexus.webp', glow: '#ffd36b', backdrop: 'fleurs',
   sky: { top: '#07020d', bottom: '#1d0833', haze: 0.45, hazeColor: '#e9b6ff', cloud: '115, 45, 175', starTint: '#ffd98a' },
   fire: { core: '255, 246, 214', mid: '255, 196, 92', tip: '150, 60, 220', ember: 0xc77dff } });
 // 7, Seat of the Soul: violet, on a deep violet-black sky with violet clouds and little violet flames rising, with violet fire.
@@ -2059,33 +2059,47 @@ function makeView() {
       });
     }
   }
-  // Maltese crosses: one seamless tile of small gold crosses, each with four arms flaring out to notched tips.
-  function paintCrosses(cv, seed, count) {
+  // One fleur-de-lis, 1 unit tall and centred on the origin: a tall middle petal, two petals curling outward,
+  // a band across the waist, and three small lobes beneath it.
+  function fleurPath(g, s) {
+    const P = (pts) => { g.moveTo(pts[0] * s, pts[1] * s); for (let i = 2; i < pts.length; i += 6) g.bezierCurveTo(pts[i] * s, pts[i + 1] * s, pts[i + 2] * s, pts[i + 3] * s, pts[i + 4] * s, pts[i + 5] * s); g.closePath(); };
+    const mirror = pts => pts.map((v, i) => (i % 2 ? v : -v));
+    g.beginPath();
+    // middle petal
+    P([0, -0.5, -0.07, -0.38, -0.17, -0.24, -0.13, -0.04, -0.11, 0.04, -0.06, 0.08, 0, 0.1,
+       0.06, 0.08, 0.11, 0.04, 0.13, -0.04, 0.17, -0.24, 0.07, -0.38, 0, -0.5]);
+    // side petals, curling out and down
+    const side = [-0.07, 0.07, -0.12, -0.14, -0.3, -0.3, -0.42, -0.2, -0.5, -0.12, -0.47, 0.04, -0.37, 0.09,
+                  -0.42, 0.01, -0.39, -0.1, -0.3, -0.11, -0.2, -0.12, -0.13, -0.02, -0.11, 0.1];
+    P(side); P(mirror(side));
+    // band
+    g.moveTo(-0.22 * s, 0.08 * s); g.lineTo(0.22 * s, 0.08 * s); g.lineTo(0.2 * s, 0.16 * s); g.lineTo(-0.2 * s, 0.16 * s); g.closePath();
+    // lobes beneath
+    P([-0.06, 0.16, -0.05, 0.27, -0.02, 0.36, 0, 0.44, 0.02, 0.36, 0.05, 0.27, 0.06, 0.16]);
+    const low = [-0.08, 0.16, -0.16, 0.18, -0.26, 0.24, -0.29, 0.34, -0.21, 0.31, -0.13, 0.27, -0.05, 0.2];
+    P(low); P(mirror(low));
+  }
+  // Fleurs-de-lis: one seamless tile of small gold fleurs-de-lis, upright or nearly so.
+  function paintFleurs(cv, seed, count) {
     const g = cv.getContext('2d'), T = cv.width;
     let sd = seed;
     const rnd = () => { sd = (sd * 16807) % 2147483647; return sd / 2147483647; };
-    const cross = L => {
-      g.beginPath();
-      for (let k = 0; k < 4; k++) {
-        const a = k * Math.PI / 2, pt = (x, y) => g.lineTo(x * Math.cos(a) - y * Math.sin(a), x * Math.sin(a) + y * Math.cos(a));
-        pt(0, -L * 0.03); pt(-L * 0.58, -L); pt(0, -L * 0.64); pt(L * 0.58, -L);
-      }
-      g.closePath();
-    };
     for (let i = 0; i < count; i++) {
-      const x = rnd() * T, y = rnd() * T, L = 15 + Math.pow(rnd(), 1.6) * 15, turn = (rnd() - 0.5) * 0.3, a = 0.65 + rnd() * 0.35;
+      const x = rnd() * T, y = rnd() * T, h = 26 + Math.pow(rnd(), 1.6) * 26, turn = (rnd() - 0.5) * 0.5, a = 0.65 + rnd() * 0.35;
       for (const dx of [-T, 0, T]) for (const dy of [-T, 0, T]) {
         const px = x + dx, py = y + dy;
-        if (px < -L * 2 || px > T + L * 2 || py < -L * 2 || py > T + L * 2) continue;
+        if (px < -h || px > T + h || py < -h || py > T + h) continue;
         g.save();
         g.translate(px, py); g.rotate(turn);
         g.globalAlpha = a;
-        const metal = g.createRadialGradient(0, 0, 0, 0, 0, L);
-        metal.addColorStop(0, '#fff6cf'); metal.addColorStop(0.55, '#ffcf5a'); metal.addColorStop(1, '#c98a12');
-        g.shadowColor = 'rgba(255, 194, 74, .55)'; g.shadowBlur = L * 0.35;
-        cross(L); g.fillStyle = metal; g.fill();
+        fleurPath(g, h);
+        // A dark edge drawn under the gold outlines the whole shape without lines where its parts overlap.
+        g.shadowColor = 'rgba(255, 194, 74, .55)'; g.shadowBlur = h * 0.25;
+        g.lineJoin = 'round'; g.strokeStyle = 'rgba(110, 60, 10, .75)'; g.lineWidth = Math.max(1.4, h * 0.05); g.stroke();
         g.shadowBlur = 0;
-        g.lineJoin = 'miter'; g.strokeStyle = 'rgba(110, 60, 10, .7)'; g.lineWidth = Math.max(0.8, L * 0.045); g.stroke();   // a fine dark edge keeps the shape crisp
+        const metal = g.createLinearGradient(0, -h / 2, 0, h / 2);
+        metal.addColorStop(0, '#fff6cf'); metal.addColorStop(0.5, '#ffcf5a'); metal.addColorStop(1, '#c98a12');
+        g.fillStyle = metal; g.fill();
         g.restore();
       }
     }
@@ -2114,8 +2128,8 @@ function makeView() {
     hearts: driftLayers(paintHearts, 919, 30, [{ repeat: 1.3, speed: [0.006, -0.02], opacity: 0.55 }, { repeat: 0.8, speed: [-0.009, -0.036], opacity: 0.95 }]),
     // Violet flames rising.
     flames: driftLayers(paintFlames, 331, 22, [{ repeat: 1.3, speed: [0.004, -0.032], opacity: 0.5 }, { repeat: 0.8, speed: [-0.006, -0.058], opacity: 0.9 }]),
-    // Gold Maltese crosses drifting slowly upward and glinting.
-    crosses: driftLayers(paintCrosses, 211, 13, [{ repeat: 1.3, speed: [0.005, -0.012], opacity: 0.55, twinkle: true }, { repeat: 0.8, speed: [-0.007, -0.022], opacity: 0.95, twinkle: true }]),
+    // Gold fleurs-de-lis drifting slowly upward and glinting.
+    fleurs: driftLayers(paintFleurs, 211, 13, [{ repeat: 1.3, speed: [0.005, -0.012], opacity: 0.55, twinkle: true }, { repeat: 0.8, speed: [-0.007, -0.022], opacity: 0.95, twinkle: true }]),
     // Emerald sparkles drifting slowly and twinkling.
     sparkles: driftLayers(paintSparkles, 577, 18, [{ repeat: 1.3, speed: [0.006, -0.01], opacity: 0.6, twinkle: true }, { repeat: 0.8, speed: [-0.008, -0.018], opacity: 0.95, twinkle: true }])
   };
