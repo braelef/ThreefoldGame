@@ -482,6 +482,8 @@ const HIGHLIGHTS = {
   'Lift only':     { lift: true }
 };
 let HIGHLIGHT = 'Lift only';   // the style in use
+// Number circles over face-up table cards. Off: the turn bar and the magnifier show the numbers instead.
+const NUMBER_BADGES = false;
 const ROOM = {
   tableWood: { base: '#7b4a26', dark: '#3d2210', light: '#b07a45', boards: 5, knots: 0.5, seed: 11 },
   floorWood: { base: '#a98058', dark: '#6b4a2c', light: '#cda577', boards: 9, knots: 0.25, seed: 5 },
@@ -2460,11 +2462,13 @@ function makeView() {
       t.dz = seat && seat.row ? 0.72 : 0;
     });
     cards.forEach((c, id) => { c.playable = OPTS.some(o => o.card.id === id); c.halo.visible = c.playable && !highlight.lift; });
-    // Number badges: each face-up card on the table, and one per won trio.
+    // Number badges: each face-up card on the table, and one per won trio. Switched off by NUMBER_BADGES.
     const marks = [];
-    S.middle.forEach(c => { if (c && c.up) marks.push({ id: c.id, n: c.n, small: false }); });
-    S.players.forEach(pl => pl.hand.forEach(c => { if (c.up) marks.push({ id: c.id, n: c.n, small: false }); }));
-    S.players.forEach(pl => pl.trios.forEach(n => marks.push({ id: (n - 1) * 3 + 1, n, small: true })));
+    if (NUMBER_BADGES) S.middle.forEach(c => { if (c && c.up) marks.push({ id: c.id, n: c.n, small: false }); });
+    if (NUMBER_BADGES) {
+      S.players.forEach(pl => pl.hand.forEach(c => { if (c.up) marks.push({ id: c.id, n: c.n, small: false }); }));
+      S.players.forEach(pl => pl.trios.forEach(n => marks.push({ id: (n - 1) * 3 + 1, n, small: true })));
+    }
     while (badgePool.length < marks.length) {
       const el = document.createElement('div');
       labels.appendChild(el);
