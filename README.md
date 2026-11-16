@@ -11,6 +11,29 @@ the 3D view from loading its images and video when `index.html` is opened straig
 - **GitHub Pages:** in the repository settings, turn on Pages for the `main` branch. The game is then at the Pages address.
 - **On your own computer:** run `python3 -m http.server` in this folder and open `http://localhost:8000`.
 
+## Playing online with voice chat
+
+Choose **Multiplayer** in the start menu. One person hosts and gets a five-character room code and an invite
+link; friends join with either. Everyone hears everyone through an open microphone with a mute button, and
+computer players fill any empty seats. Up to six people can play.
+
+- **The site must use HTTPS.** Browsers only allow microphones on secure pages.
+- **If the game sits inside another page in an iframe**, the iframe needs `allow="microphone"`.
+- **How players connect:** browsers connect directly to each other with WebRTC, using the
+  [PeerJS](https://peerjs.com) library. A meeting-point server introduces them by room code, after which moves and
+  voices travel between the players. The host's browser runs the game, so if the host leaves, the game ends.
+  If a guest leaves, a computer player takes their seat.
+- **The meeting-point server:** by default this is the free public PeerJS server, which needs no account but comes
+  with no uptime guarantee. To run your own, start the official PeerServer (for example
+  `docker run -p 9000:9000 -d peerjs/peerjs-server`), put it behind HTTPS, and set `server` in the `NET_CONFIG`
+  block of `index.html`, for example `{ host: 'peer.heartcenter.org', port: 443, path: '/', secure: true }`.
+- **Voice relays:** players on strict networks (some offices and schools) may need a TURN relay to hear each
+  other. PeerJS's defaults include public ones; your own can be listed in `iceServers` in `NET_CONFIG`.
+- **Fair play:** every player's browser receives the whole table, including face-down cards, so a player who
+  opens the browser's developer tools could see cards they shouldn't. It is built for games among friends.
+
+The copy of the game hosted on claude.ai cannot use microphones or outside servers, so multiplayer is switched off there.
+
 ## What is here
 
 | Path | What it is |

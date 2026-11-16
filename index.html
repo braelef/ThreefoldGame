@@ -155,6 +155,36 @@ select, .btn { font: inherit; color: var(--ink); background: var(--panel); borde
 .seg input:focus-visible + label, .m-btn:focus-visible { outline: 3px solid #fff; outline-offset: -3px; }
 .menu-hint { margin: 0; min-height: 2.5em; font-size: .86rem; line-height: 1.35; color: var(--m-soft); }
 .menu-row { display: grid; grid-template-columns: 1fr 2fr; gap: 10px; }
+.menu-row:has(> [hidden]) { grid-template-columns: 1fr; }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.setup-h { font-size: 1.35rem; }
+#lobby-code { color: var(--m-gold); letter-spacing: .14em; }
+.field { display: flex; flex-direction: column; gap: 6px; font-size: .78rem; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--m-gold); }
+.field input { font: inherit; font-size: 1.05rem; font-weight: 400; letter-spacing: .04em; text-transform: none; color: var(--m-ink); background: rgba(255, 255, 255, .06);
+  border: 1px solid var(--m-line); border-radius: 10px; padding: 10px 12px 8px; }
+#net-code { text-transform: uppercase; letter-spacing: .3em; }
+.field input:focus-visible { outline: 3px solid #fff; outline-offset: -3px; }
+.join-row { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: end; flex-direction: row !important; }
+.invite { display: flex; flex-direction: column; gap: 6px; }
+#lobby-link { min-height: 0; overflow-wrap: anywhere; user-select: all; }
+#lobby-roster { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+#lobby-roster li { display: flex; align-items: center; gap: 10px; padding: 8px 12px 6px; border: 1px solid var(--m-line); border-radius: 10px; }
+#lobby-roster .who { font-weight: 600; flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#lobby-roster .tag { font-size: .78rem; color: var(--m-gold); }
+#lobby-roster .mic { font-size: .75rem; padding: 2px 8px 1px; border-radius: 999px; border: 1px solid rgba(143, 208, 255, .5); color: #cfe9ff; }
+#lobby-roster .mic.off { border-color: rgba(255, 255, 255, .2); color: var(--m-soft); }
+#lobby-roster .mic.talk { background: rgba(143, 208, 255, .25); box-shadow: 0 0 10px rgba(143, 208, 255, .7); }
+.menu-card #lobby-wait:empty, .menu-card #lobby-mic:empty { display: none; }
+#mic-btn.off { color: var(--muted); }
+#toast { position: absolute; left: 50%; top: 14px; z-index: 7; max-width: min(90%, 460px); transform: translate(-50%, -8px); opacity: 0; pointer-events: none;
+  padding: 8px 14px 6px; border-radius: 999px; background: rgba(10, 13, 26, .88); color: #fbf6e9; border: 1px solid rgba(226, 192, 108, .45);
+  font-size: .9rem; text-align: center; transition: opacity .25s, transform .25s; }
+#toast.show { opacity: 1; transform: translate(-50%, 0); }
+.seat.talk { box-shadow: 0 0 0 2px #8fd0ff, 0 0 14px #8fd0ff; }
+.seat.muted::after { content: ""; width: 12px; height: 12px; flex: none; opacity: .75; background: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round'%3E%3Crect x='9' y='3' width='6' height='11' rx='3'/%3E%3Cpath d='M5 11a7 7 0 0 0 14 0M12 18v3M3 3l18 18'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round'%3E%3Crect x='9' y='3' width='6' height='11' rx='3'/%3E%3Cpath d='M5 11a7 7 0 0 0 14 0M12 18v3M3 3l18 18'/%3E%3C/svg%3E") center / contain no-repeat; }
+#end-note { color: var(--m-soft); }
 #moves { display: flex; flex-wrap: wrap; gap: 6px; }
 #moves:not(:focus-within):not(.open) { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 #moves button { font: inherit; font-size: .8rem; padding: 3px 8px; border-radius: 6px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); }
@@ -172,6 +202,7 @@ summary { cursor: pointer; color: var(--ink); font-weight: 600; }
       <label for="opt-font">Card font
         <select id="opt-font"></select>
       </label>
+      <button class="btn quiet" id="mic-btn" type="button" aria-pressed="false" hidden>Mute</button>
       <button class="btn quiet" id="open-menu" type="button">Menu</button>
       <button class="btn" id="new-game" type="button">New game</button>
     </div>
@@ -182,6 +213,8 @@ summary { cursor: pointer; color: var(--ink); font-weight: 600; }
   <div id="stage">
     <canvas id="view" aria-label="Card table. Use the move buttons after this to play with a keyboard."></canvas>
     <div id="labels"></div>
+    <div id="toast" role="status" aria-live="polite"></div>
+    <div id="voices" hidden></div>
     <div id="burst" aria-hidden="true">
       <canvas></canvas>
       <div class="flash"></div>
@@ -214,6 +247,7 @@ summary { cursor: pointer; color: var(--ink); font-weight: 600; }
         <button type="button" class="m-btn primary" id="end-new">New game</button>
         <button type="button" class="m-btn" id="end-menu">Menu</button>
       </div>
+      <p class="menu-note" id="end-note" hidden>Waiting for the host to start the next game.</p>
     </div>
     <div id="menu" role="dialog" aria-modal="true" aria-labelledby="menu-title">
       <div class="menu-card">
@@ -223,8 +257,71 @@ summary { cursor: pointer; color: var(--ink); font-weight: 600; }
           <div class="menu-actions">
             <button type="button" class="m-btn ghost" id="menu-resume" hidden>Back to game</button>
             <button type="button" class="m-btn primary" id="menu-single">Single player</button>
-            <button type="button" class="m-btn" id="menu-multi" disabled aria-describedby="multi-note">Multiplayer</button>
-            <p class="menu-note" id="multi-note">Multiplayer is coming soon.</p>
+            <button type="button" class="m-btn" id="menu-multi" aria-describedby="multi-note">Multiplayer</button>
+            <p class="menu-note" id="multi-note"></p>
+          </div>
+        </section>
+        <section id="menu-net" hidden>
+          <h2 class="setup-h">Multiplayer</h2>
+          <p class="menu-sub">Play with friends and talk while you play. Your browser will ask to use your microphone.</p>
+          <label class="field" for="net-name">Your name
+            <input id="net-name" type="text" maxlength="16" autocomplete="nickname" spellcheck="false">
+          </label>
+          <button type="button" class="m-btn primary" id="net-host">Host a game</button>
+          <form class="join-row" id="net-join-form">
+            <label class="field" for="net-code">Room code
+              <input id="net-code" type="text" maxlength="5" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ABCDE">
+            </label>
+            <button type="submit" class="m-btn" id="net-join">Join</button>
+          </form>
+          <p class="menu-hint" id="net-msg" role="alert"></p>
+          <button type="button" class="m-btn" id="net-back">Back</button>
+        </section>
+        <section id="menu-lobby" hidden>
+          <h2 class="setup-h">Room <span id="lobby-code"></span></h2>
+          <div class="invite">
+            <button type="button" class="m-btn" id="lobby-copy">Copy invite link</button>
+            <p class="menu-hint" id="lobby-link"></p>
+          </div>
+          <fieldset>
+            <legend>Players</legend>
+            <ul id="lobby-roster"></ul>
+            <p class="menu-hint" id="lobby-mic"></p>
+          </fieldset>
+          <div id="lobby-host" hidden>
+            <fieldset>
+              <legend>Seats</legend>
+              <div class="seg">
+                <input type="radio" name="lseats" id="lseats-3" value="3"><label for="lseats-3">3</label>
+                <input type="radio" name="lseats" id="lseats-4" value="4"><label for="lseats-4">4</label>
+                <input type="radio" name="lseats" id="lseats-5" value="5"><label for="lseats-5">5</label>
+                <input type="radio" name="lseats" id="lseats-6" value="6"><label for="lseats-6">6</label>
+              </div>
+              <p class="menu-hint" id="lhint-seats"></p>
+            </fieldset>
+            <fieldset>
+              <legend>Mode</legend>
+              <div class="seg">
+                <input type="radio" name="lmode" id="lmode-simple" value="simple"><label for="lmode-simple">Simple</label>
+                <input type="radio" name="lmode" id="lmode-spicy" value="spicy"><label for="lmode-spicy">Spicy</label>
+              </div>
+              <p class="menu-hint" id="lhint-mode"></p>
+            </fieldset>
+            <fieldset>
+              <legend>Computer players</legend>
+              <div class="seg">
+                <input type="radio" name="llevel" id="llevel-normal" value="normal"><label for="llevel-normal">Normal</label>
+                <input type="radio" name="llevel" id="llevel-hard" value="hard"><label for="llevel-hard">Hard</label>
+                <input type="radio" name="llevel" id="llevel-expert" value="expert"><label for="llevel-expert">Expert</label>
+                <input type="radio" name="llevel" id="llevel-master" value="master"><label for="llevel-master">Master</label>
+              </div>
+            </fieldset>
+          </div>
+          <p class="menu-hint" id="lobby-wait"></p>
+          <button type="button" class="m-btn primary" id="lobby-resume" hidden>Back to game</button>
+          <div class="menu-row">
+            <button type="button" class="m-btn" id="lobby-leave">Leave</button>
+            <button type="button" class="m-btn primary" id="lobby-start" hidden>Start game</button>
           </div>
         </section>
         <form id="menu-setup" hidden>
@@ -309,8 +406,8 @@ Object.assign(CARD_FACES[3], { name: 'Heart Chakra', color: '#c4467f', emblem: '
 Object.assign(CARD_FACES[4], { name: 'Root Chakra', color: '#93a1b8', emblem: 'assets/root.webp', glow: '#ffffff', backdrop: 'petals',
   sky: { top: '#3f4963', bottom: '#8490a9', haze: 0.4, hazeColor: '#ffffff' },
   fire: { core: '255, 255, 255', mid: '226, 234, 255', tip: '160, 178, 235', ember: 0xdde6ff } });
-// 5, Third Eye: emerald green, on a deep green-black sky with emerald clouds and little drifting eyes, with green fire.
-Object.assign(CARD_FACES[5], { name: 'Third Eye Chakra', color: '#1f9a55', emblem: 'assets/third-eye.webp', glow: '#8dffbf', backdrop: 'eyes',
+// 5, Third Eye: emerald green, on a deep green-black sky with emerald clouds and little glowing triangles, with green fire.
+Object.assign(CARD_FACES[5], { name: 'Third Eye Chakra', color: '#1f9a55', emblem: 'assets/third-eye.webp', glow: '#8dffbf', backdrop: 'triangles',
   sky: { top: '#010805', bottom: '#041c11', haze: 0.42, hazeColor: '#4dff9a', cloud: '20, 150, 80', starTint: '#d6ffe6' },
   fire: { core: '236, 255, 244', mid: '110, 255, 170', tip: '20, 170, 90', ember: 0x3dff8f } });
 // 7, Seat of the Soul: violet, on a deep violet-black sky with violet clouds and little violet flames rising, with violet fire.
@@ -383,7 +480,8 @@ function wins(trios, mode) {
   return trios.some(a => connected(a).some(b => trios.includes(b)));
 }
 
-function newGame(nPlayers, mode, level, rng) {
+// seats: optional list of { name, human, pid } for each place at the table (pid: a networked player's id).
+function newGame(nPlayers, mode, level, rng, seats) {
   const deck = [];
   for (let n = 1; n <= 12; n++) for (let k = 0; k < 3; k++) deck.push({ id: (n - 1) * 3 + k, n, up: false });
   for (let i = deck.length - 1; i > 0; i--) {
@@ -391,11 +489,14 @@ function newGame(nPlayers, mode, level, rng) {
     [deck[i], deck[j]] = [deck[j], deck[i]];
   }
   const per = DEAL[nPlayers][0];
-  const players = NAMES.slice(0, nPlayers).map((name, i) => ({
-    name, human: i === 0, trios: [], mem: [],
+  const people = seats || NAMES.slice(0, nPlayers).map((name, i) => ({ name, human: i === 0 }));
+  const players = people.map(p => ({
+    name: p.name, human: !!p.human, pid: p.pid || null, trios: [], mem: [],
     hand: deck.splice(0, per).sort((a, b) => a.n - b.n)
   }));
-  return { mode, level, players, middle: deck, current: 0, revealed: [], pending: null, winner: null, msg: '' };
+  // turn counts finished turns; gid tells one game from the next; last is the most recent reveal.
+  return { mode, level, players, middle: deck, current: 0, revealed: [], pending: null, winner: null,
+    turn: 0, gid: Math.floor(rng() * 1e9).toString(36), last: null };
 }
 
 function allCards(s) {
@@ -445,6 +546,7 @@ function resolve(s) {
   }
   s.revealed = [];
   s.pending = null;
+  s.turn = (s.turn || 0) + 1;
   if (s.winner === null) s.current = (s.current + 1) % s.players.length;
 }
 
@@ -516,32 +618,37 @@ const PACE = { scale: 1 };   // multiplies every wait; 1 is normal speed
 const pace = kind => SPEED[S.level][kind] * PACE.scale;
 const YOUR_TURN = 'Your turn. Pick a middle card, or the lowest or highest card of any hand.';
 
+// Text is always written from the viewer's side: seat 0 of S is "you" (see rotateState for networked games).
 function describe(o) {
-  const me = S.players[S.current];
-  const who = me.human ? 'You' : me.name;
-  const n = o.card.n;
-  if (o.where === 'mid') return `${who} flipped a middle card: ${n}.`;
+  const actor = S.current, mine = actor === 0;
+  const who = mine ? 'You' : S.players[actor].name;
+  if (o.where === 'mid') return `${who} flipped a middle card: ${o.n}.`;
   const end = o.end === 'low' ? 'lowest' : 'highest';
-  const owner = S.players[o.p];
-  if (o.p === S.current) return `${who} showed ${me.human ? 'your' : 'their'} own ${end} card: ${n}.`;
-  return `${who} asked ${owner.human ? 'you' : owner.name} for ${owner.human ? 'your' : 'their'} ${end} card: ${n}.`;
+  if (o.p === actor) return `${who} showed ${mine ? 'your' : 'their'} own ${end} card: ${o.n}.`;
+  const yours = o.p === 0;
+  return `${who} asked ${yours ? 'you' : S.players[o.p].name} for ${yours ? 'your' : 'their'} ${end} card: ${o.n}.`;
+}
+function statusText() {
+  const o = S.last;
+  if (!o) return S.current === 0 ? YOUR_TURN : `${S.players[S.current].name}'s turn.`;
+  let msg = describe(o);
+  if (o.result === 'miss') msg += ' No match, so the cards go back.';
+  if (o.result === 'trio') msg += ` That makes a trio of ${o.n}s.`;
+  return msg;
 }
 
 function optionLabel(o) {
   if (o.where === 'mid') return `Middle card ${o.slot + 1}`;
-  const owner = S.players[o.p];
-  return `${owner.human ? 'Your' : owner.name + "'s"} ${o.end === 'low' ? 'lowest' : 'highest'} card`;
+  return `${o.p === 0 ? 'Your' : S.players[o.p].name + "'s"} ${o.end === 'low' ? 'lowest' : 'highest'} card`;
 }
 
 function play(o) {
-  let msg = describe(o);
-  const result = reveal(S, o, Math.random);
-  if (result === 'miss') msg += ' No match, so the cards go back.';
-  if (result === 'trio') {
-    msg += ` That makes a trio of ${o.card.n}s.`;
-    if (S.players[S.current].human) trioBurst(o.card.n);
+  if (NET.mode === 'guest') {   // in someone else's game, the host makes the move
+    Net.sendPlay(o);
+    return;
   }
-  S.msg = msg;
+  const result = reveal(S, o, Math.random);
+  S.last = { where: o.where, slot: o.slot, p: o.p, end: o.end, n: o.card.n, result };
   tick();
 }
 
@@ -553,10 +660,13 @@ function showEnd() {
   const won = S.winner === 0;
   $('end-title').textContent = won ? 'You Win' : `${S.players[S.winner].name} Wins`;
   el.classList.toggle('lost', !won);
+  // In someone else's game only the host can deal again.
+  $('end-new').hidden = NET.mode === 'guest';
+  $('end-note').hidden = NET.mode !== 'guest';
   el.classList.add('show');
   // Move the keyboard to New game once the buttons have faded in.
   clearTimeout(endFocus);
-  endFocus = setTimeout(() => { if (el.classList.contains('show')) $('end-new').focus({ preventScroll: true }); }, 3300);
+  endFocus = setTimeout(() => { if (el.classList.contains('show')) $(NET.mode === 'guest' ? 'end-menu' : 'end-new').focus({ preventScroll: true }); }, 3300);
 }
 function hideEnd() {
   clearTimeout(endFocus);
@@ -628,15 +738,15 @@ function trioBurst(n) {
 function tick() {
   clearTimeout(timer);
   render();
+  Net.share();                      // a host sends every change to the other players
+  if (NET.mode === 'guest') return; // the host runs the game; a guest only shows it
   if (!menuOpen && S.winner !== null) showEnd();
-  if (menuOpen || S.winner !== null) return;   // the game waits while the menu is open
+  const paused = menuOpen && !NET.mode;   // single player pauses under the menu; an online game carries on
+  if (paused || S.winner !== null) return;
   if (S.pending) {
     timer = setTimeout(() => {
       resolve(S);
-      if (S.winner === null) {
-        const next = S.players[S.current];
-        S.msg = next.human ? YOUR_TURN : `${next.name}'s turn.`;
-      }
+      if (S.winner === null) S.last = null;
       tick();
     }, pace('resolve'));
     return;
@@ -646,13 +756,21 @@ function tick() {
   }
 }
 
+let burstTurn = -1;
 function render() {
   const over = S.winner !== null;
-  const canAct = !menuOpen && !over && !S.pending && S.players[S.current].human;
+  const myTurn = S.current === 0 && S.players[0].human && (NET.mode !== 'guest' || NET.seat >= 0);
+  const canAct = !menuOpen && !over && !S.pending && myTurn && !NET.waiting;
   OPTS = canAct ? options(S) : [];
+  const msg = statusText();
   $('status').textContent = !gameStarted ? 'Choose a game to begin.'
-    : over ? `${S.msg} ${S.winner === 0 ? 'You win!' : S.players[S.winner].name + ' wins.'} Press New game to play again.`
-    : menuOpen ? 'Game paused.' : S.msg;
+    : over ? `${msg} ${S.winner === 0 ? 'You win!' : S.players[S.winner].name + ' wins.'}${NET.mode === 'guest' ? '' : ' Press New game to play again.'}`
+    : menuOpen && !NET.mode ? 'Game paused.' : msg;
+  // Your own trio gets the number and lightning, once per trio.
+  if (gameStarted && S.pending === 'trio' && S.current === 0 && burstTurn !== S.gid + S.turn) {
+    burstTurn = S.gid + S.turn;
+    trioBurst(S.last.n);
+  }
   const moves = $('moves');
   moves.textContent = '';
   OPTS.forEach((o, i) => {
@@ -662,18 +780,22 @@ function render() {
     b.dataset.opt = i;
     moves.appendChild(b);
   });
+  $('new-game').disabled = NET.mode === 'guest';
   if (View) View.sync();
 }
 
 function startNew() {
-  S = newGame(SETTINGS.players, SETTINGS.mode, SETTINGS.level, Math.random);
+  if (NET.mode === 'guest') return;
+  const seats = NET.mode === 'host' ? Net.seats() : null;
+  const st = NET.mode === 'host' ? NET.settings : SETTINGS;
+  S = newGame(seats ? seats.length : st.players, st.mode, st.level, Math.random, seats);
   S.v = 2;   // marks the current difficulty names
   hideEnd();
-  S.msg = YOUR_TURN;
   gameStarted = true;
   menuOpen = false;
   $('menu').hidden = true;
   if (View) View.reset();
+  if (NET.mode === 'host') { NET.inGame = true; Net.shareLobby(); }
   tick();
 }
 
@@ -710,14 +832,20 @@ function fillSetup() {
 function showMenu(screen) {
   hideEnd();
   menuOpen = true;
-  clearTimeout(timer);
+  if (!NET.mode) clearTimeout(timer);   // an online game keeps going for everyone else
   $('menu').hidden = false;
   $('menu-home').hidden = screen !== 'home';
   $('menu-setup').hidden = screen !== 'setup';
+  $('menu-net').hidden = screen !== 'net';
+  $('menu-lobby').hidden = screen !== 'lobby';
+  if (screen === 'lobby') Net.renderLobby();
   $('menu-resume').hidden = !(gameStarted && S && S.winner === null);
   if (screen === 'setup') fillSetup();
   if (S) render();
-  const first = screen === 'setup' ? $('level-' + SETTINGS.level) : $('menu-resume').hidden ? $('menu-single') : $('menu-resume');
+  const first = screen === 'setup' ? $('level-' + SETTINGS.level)
+    : screen === 'net' ? ($('net-name').value ? $('net-host') : $('net-name'))
+    : screen === 'lobby' ? (!$('lobby-resume').hidden ? $('lobby-resume') : !$('lobby-start').hidden ? $('lobby-start') : $('lobby-leave'))
+    : $('menu-resume').hidden ? $('menu-single') : $('menu-resume');
   first.focus({ preventScroll: true });
 }
 function resumeGame() {
@@ -725,9 +853,9 @@ function resumeGame() {
   $('menu').hidden = true;
   tick();
 }
-$('open-menu').addEventListener('click', () => showMenu('home'));
+$('open-menu').addEventListener('click', () => showMenu(NET.mode ? 'lobby' : 'home'));
 $('end-new').addEventListener('click', startNew);
-$('end-menu').addEventListener('click', () => showMenu('home'));
+$('end-menu').addEventListener('click', () => showMenu(NET.mode ? 'lobby' : 'home'));
 $('menu-single').addEventListener('click', () => showMenu('setup'));
 $('setup-back').addEventListener('click', () => showMenu('home'));
 $('menu-resume').addEventListener('click', resumeGame);
@@ -743,9 +871,493 @@ $('menu-setup').addEventListener('submit', e => {
 });
 $('menu').addEventListener('keydown', e => {
   if (e.key !== 'Escape') return;
-  if (!$('menu-setup').hidden) showMenu('home');
+  if (!$('menu-setup').hidden || !$('menu-net').hidden) showMenu('home');
+  else if (!$('menu-lobby').hidden) { if (!$('lobby-resume').hidden) resumeGame(); }
   else if (!$('menu-resume').hidden) resumeGame();
 });
+
+/* ---------- Multiplayer and voice ---------- */
+// Players' browsers connect straight to each other with WebRTC, using the PeerJS library. A meeting-point
+// server introduces them by room code; after that, moves and voices travel directly between the players.
+// The host's browser runs the game and sends each change to everyone else; empty seats get computer players.
+const NET_CONFIG = {
+  library: 'https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js',
+  // null uses the free public PeerJS server. To use your own, for example:
+  // server: { host: 'peer.heartcenter.org', port: 443, path: '/', secure: true },
+  server: null,
+  iceServers: null,   // null keeps PeerJS's own defaults (public STUN and TURN relays)
+  prefix: 'threefold-room-',
+  maxPeople: 6
+};
+const CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';   // no 0/O or 1/I/L, which are easy to misread
+const ON_CLAUDE = !!(window.claude && window.claude.use);  // the Claude-hosted copy cannot use microphones or outside servers
+// mode: null (single player), 'host' or 'guest'. seat: where this player sits in the game the host sent.
+const NET = { mode: null, seat: -1, peer: null, host: null, conns: {}, roster: [], code: '', name: '', waiting: false,
+  inGame: false, leaving: false, settings: { players: 4, mode: 'simple', level: 'normal' } };
+const VOICE = { stream: null, mic: false, muted: false, ctx: null, calls: {}, meters: {}, talk: {}, audio: {}, loop: null };
+
+// Turns the host's game around so that this player sits at seat 0, where the table draws "you".
+function rotateState(st, k) {
+  if (!k) return st;
+  const n = st.players.length, r = i => (i - k + n) % n;
+  const last = st.last ? Object.assign({}, st.last, st.last.where === 'hand' ? { p: r(st.last.p) } : {}) : null;
+  return Object.assign({}, st, { players: st.players.slice(k).concat(st.players.slice(0, k)),
+    current: r(st.current), winner: st.winner === null ? null : r(st.winner), last });
+}
+
+let toastTimer = null;
+function toast(text) {
+  const el = $('toast');
+  el.textContent = text;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 4200);
+}
+
+// The ring of light and the muted mark on a player's name at the table.
+function seatVoiceClass(pl) {
+  if (!NET.mode || !pl.pid || !pl.human) return '';
+  const me = pl.pid === Net.id();
+  const entry = NET.roster.find(r => r.pid === pl.pid);
+  const muted = me ? VOICE.muted || !VOICE.mic : !!(entry && entry.muted);
+  return (VOICE.talk[me ? 'me' : pl.pid] && !muted ? ' talk' : '') + (muted ? ' muted' : '');
+}
+
+const Net = {
+  id: () => NET.peer && NET.peer.id,
+  cleanName(name) {
+    return String(name || '').replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, 16) || 'Player';
+  },
+  code() {
+    let c = '';
+    for (let i = 0; i < 5; i++) c += CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)];
+    return c;
+  },
+  message(err) {
+    const type = err && err.type;
+    if (type === 'peer-unavailable') return 'No game was found with that code. Check the code, or ask the host for a new invite.';
+    if (type === 'browser-incompatible') return 'This browser cannot play online. Try a current version of Chrome, Edge, Firefox or Safari.';
+    if (type === 'library') return 'The online play library could not be loaded. Check your internet connection and try again.';
+    if (type === 'full') return 'That game already has six players.';
+    if (type === 'timeout') return 'The game could not be reached. Check the code and your internet connection, then try again.';
+    return 'Could not connect to the game service. Check your internet connection and try again.';
+  },
+  loadLibrary() {
+    if (window.Peer) return Promise.resolve();
+    return new Promise((ok, fail) => {
+      const tag = document.createElement('script');
+      tag.src = NET_CONFIG.library;
+      tag.onload = () => (window.Peer ? ok() : fail({ type: 'library' }));
+      tag.onerror = () => fail({ type: 'library' });
+      document.head.appendChild(tag);
+    });
+  },
+  // Opens a connection to the meeting-point server under the given id (or a random one).
+  openPeer(id) {
+    return new Promise((ok, fail) => {
+      const opts = Object.assign({ debug: 1 }, NET_CONFIG.server || {});
+      if (NET_CONFIG.iceServers) opts.config = { iceServers: NET_CONFIG.iceServers };
+      const peer = id ? new Peer(id, opts) : new Peer(opts);
+      const timeout = setTimeout(() => { peer.destroy(); fail({ type: 'timeout' }); }, 15000);
+      peer.on('open', () => { clearTimeout(timeout); ok(peer); });
+      peer.on('error', err => { clearTimeout(timeout); fail(err); });
+    });
+  },
+  async start(asHost, code) {
+    const name = Net.cleanName($('net-name').value);
+    $('net-name').value = name;
+    try { localStorage.setItem('threefold-name', name); } catch (e) { /* storage may be unavailable */ }
+    $('net-msg').textContent = asHost ? 'Setting up your room…' : 'Joining…';
+    $('net-host').disabled = $('net-join').disabled = true;
+    try {
+      await Net.loadLibrary();
+      await Voice.prepare();
+      if (asHost) {
+        for (let tries = 0; ; tries++) {
+          code = Net.code();
+          try { NET.peer = await Net.openPeer(NET_CONFIG.prefix + code); break; }
+          catch (err) { if (err.type !== 'unavailable-id' || tries > 4) throw err; }
+        }
+      } else {
+        NET.peer = await Net.openPeer(null);
+      }
+    } catch (err) {
+      Voice.stop();
+      $('net-msg').textContent = Net.message(err);
+      $('net-host').disabled = $('net-join').disabled = false;
+      return;
+    }
+    $('net-host').disabled = $('net-join').disabled = false;
+    $('net-msg').textContent = '';
+    Object.assign(NET, { mode: asHost ? 'host' : 'guest', code, name, seat: -1, conns: {}, inGame: false, leaving: false, waiting: false });
+    NET.peer.on('call', call => { call.answer(VOICE.stream); Voice.take(call); });
+    NET.peer.on('error', err => Net.trouble(err));
+    NET.peer.on('disconnected', () => { if (NET.peer && !NET.peer.destroyed) NET.peer.reconnect(); });
+    $('mic-btn').hidden = false;
+    Voice.refreshButton();
+    if (asHost) {
+      NET.roster = [{ pid: Net.id(), name, muted: VOICE.muted || !VOICE.mic, host: true }];
+      NET.peer.on('connection', conn => Net.accept(conn));
+      gameStarted = false;
+      showMenu('lobby');
+    } else {
+      NET.roster = [];
+      const conn = NET.peer.connect(NET_CONFIG.prefix + code, { reliable: true, serialization: 'json' });
+      NET.host = conn;
+      const timeout = setTimeout(() => { if (!NET.roster.length) Net.fail({ type: 'timeout' }); }, 15000);
+      conn.on('open', () => conn.send({ t: 'hello', name, muted: VOICE.muted || !VOICE.mic }));
+      conn.on('data', msg => Net.hearHost(msg));
+      conn.on('close', () => { clearTimeout(timeout); Net.hostGone(); });
+      conn.on('error', () => Net.hostGone());
+      showMenu('lobby');
+      $('lobby-wait').textContent = 'Joining the room…';
+    }
+  },
+  trouble(err) {
+    if (NET.mode === 'guest' && !NET.roster.length) Net.fail(err);   // could not reach the host at all
+    else console.warn('Connection problem:', err && err.type);
+  },
+  // Leaves the room and goes back to the start menu with a message.
+  fail(err) {
+    Net.leave();
+    showMenu('net');
+    $('net-msg').textContent = Net.message(err);
+  },
+
+  /* --- Host side --- */
+  accept(conn) {
+    conn.on('data', msg => Net.hearGuest(conn, msg));
+    conn.on('close', () => Net.drop(conn.peer));
+    conn.on('error', () => Net.drop(conn.peer));
+  },
+  hearGuest(conn, msg) {
+    if (!msg || typeof msg !== 'object') return;
+    if (msg.t === 'hello') {
+      if (NET.conns[conn.peer]) return;
+      if (NET.roster.length >= NET_CONFIG.maxPeople) { conn.send({ t: 'full' }); setTimeout(() => conn.close(), 800); return; }
+      NET.conns[conn.peer] = conn;
+      const name = Net.cleanName(msg.name);
+      NET.roster.push({ pid: conn.peer, name, muted: !!msg.muted });
+      if (NET.settings.players < NET.roster.length) NET.settings.players = NET.roster.length;
+      toast(`${name} joined.`);
+      Net.shareLobby();
+      if (NET.inGame) conn.send({ t: 'state', state: S });
+      return;
+    }
+    const entry = NET.roster.find(r => r.pid === conn.peer);
+    if (!entry) return;
+    if (msg.t === 'mute') { entry.muted = !!msg.muted; Net.shareLobby(); }
+    if (msg.t === 'play') Net.guestPlays(conn.peer, msg.o);
+  },
+  // A guest's move is checked against the rules before it is played.
+  guestPlays(pid, o) {
+    if (!S || !NET.inGame || S.winner !== null || S.pending || !o) return;
+    const seat = S.players.findIndex(p => p.pid === pid);
+    if (seat < 0 || seat !== S.current || !S.players[seat].human) return;
+    const opt = options(S).find(x => x.where === o.where && (x.where === 'mid' ? x.slot === o.slot : x.p === o.p && x.end === o.end));
+    if (opt) play(opt);
+  },
+  drop(pid) {
+    const entry = NET.roster.find(r => r.pid === pid);
+    delete NET.conns[pid];
+    Voice.hangUp(pid);
+    if (!entry) return;
+    NET.roster = NET.roster.filter(r => r.pid !== pid);
+    const pl = NET.inGame && S ? S.players.find(p => p.pid === pid) : null;
+    if (pl) {
+      // Their seat carries on as a computer player so the game can finish.
+      pl.human = false;
+      pl.pid = null;
+      toast(`${entry.name} left. A computer player took their seat.`);
+      Net.shareLobby();
+      if (S.winner === null) tick();
+    } else {
+      toast(`${entry.name} left.`);
+      Net.shareLobby();
+    }
+  },
+  // Everyone in the room in joining order, then computer players for the empty seats.
+  seats() {
+    const people = NET.roster.map(r => ({ name: r.name, human: true, pid: r.pid }));
+    const total = Math.max(people.length, Math.min(6, NET.settings.players), 3);
+    const taken = people.map(p => p.name.toLowerCase());
+    const bots = NAMES.slice(1).filter(n => !taken.includes(n.toLowerCase()));
+    while (people.length < total) people.push({ name: bots.shift() || `Player ${people.length + 1}`, human: false });
+    return people;
+  },
+  shareLobby() {
+    if (NET.mode !== 'host') return;
+    const msg = { t: 'lobby', roster: NET.roster, settings: NET.settings, inGame: NET.inGame, code: NET.code };
+    Object.values(NET.conns).forEach(c => { if (c.open) c.send(msg); });
+    Net.renderLobby();
+    Voice.sync();
+  },
+  share() {
+    if (NET.mode !== 'host' || !NET.inGame) return;
+    const msg = { t: 'state', state: S };
+    Object.values(NET.conns).forEach(c => { if (c.open) c.send(msg); });
+  },
+
+  /* --- Guest side --- */
+  hearHost(msg) {
+    if (!msg || typeof msg !== 'object') return;
+    if (msg.t === 'full') { Net.fail({ type: 'full' }); return; }
+    if (msg.t === 'lobby') {
+      NET.roster = Array.isArray(msg.roster) ? msg.roster : [];
+      NET.settings = msg.settings || NET.settings;
+      NET.inGame = !!msg.inGame;
+      Net.renderLobby();
+      Voice.sync();
+    }
+    if (msg.t === 'state' && msg.state && Array.isArray(msg.state.players)) Net.receive(msg.state);
+  },
+  receive(st) {
+    const seat = st.players.findIndex(p => p.pid === Net.id());
+    if (seat < 0) { Net.renderLobby(); return; }   // joined mid-game: dealt in to the next one
+    const fresh = !gameStarted || !S || S.gid !== st.gid || NET.seat !== seat;
+    NET.seat = seat;
+    NET.waiting = false;
+    S = rotateState(st, seat);
+    if (fresh) {
+      hideEnd();
+      gameStarted = true;
+      menuOpen = false;
+      $('menu').hidden = true;
+      if (View) View.reset();
+    }
+    render();
+    if (S.winner !== null && !menuOpen) showEnd();
+  },
+  sendPlay(o) {
+    if (!NET.host || !NET.host.open || NET.waiting) return;
+    const n = S.players.length;
+    NET.waiting = true;   // no second move until the host answers
+    NET.host.send({ t: 'play', o: { where: o.where, slot: o.slot, end: o.end, p: o.where === 'hand' ? (o.p + NET.seat) % n : undefined } });
+    render();
+    setTimeout(() => { if (NET.waiting) { NET.waiting = false; render(); } }, 4000);
+  },
+  hostGone() {
+    if (NET.mode !== 'guest' || NET.leaving) return;
+    Net.leave();
+    showMenu('net');
+    $('net-msg').textContent = 'The host closed the room, so the game ended.';
+  },
+
+  /* --- Both --- */
+  leave() {
+    NET.leaving = true;
+    clearTimeout(timer);
+    Object.values(NET.conns).forEach(c => c.close());
+    if (NET.host) NET.host.close();
+    Voice.stop();
+    if (NET.peer) NET.peer.destroy();
+    Object.assign(NET, { mode: null, seat: -1, peer: null, host: null, conns: {}, roster: [], inGame: false, waiting: false });
+    $('mic-btn').hidden = true;
+    gameStarted = false;
+    hideEnd();
+    S = newGame(SETTINGS.players, SETTINGS.mode, SETTINGS.level, Math.random);
+    if (View) View.reset();
+    render();
+  },
+  link() {
+    return `${location.origin}${location.pathname}#join-${NET.code}`;
+  },
+  renderLobby() {
+    if (!NET.mode) return;
+    const host = NET.mode === 'host', me = Net.id();
+    $('lobby-code').textContent = NET.code;
+    $('lobby-link').textContent = Net.link();
+    const list = $('lobby-roster');
+    list.textContent = '';
+    NET.roster.forEach(r => {
+      const li = document.createElement('li');
+      const isMe = r.pid === me;
+      const name = document.createElement('span');
+      name.className = 'who';
+      name.textContent = r.name;
+      li.appendChild(name);
+      const tags = [r.host ? 'Host' : '', isMe ? 'You' : ''].filter(Boolean).join(' · ');
+      if (tags) { const t = document.createElement('span'); t.className = 'tag'; t.textContent = tags; li.appendChild(t); }
+      const muted = isMe ? VOICE.muted || !VOICE.mic : r.muted;
+      const mic = document.createElement('span');
+      mic.className = 'mic' + (muted ? ' off' : '');
+      mic.dataset.pid = isMe ? 'me' : r.pid;
+      mic.textContent = muted ? 'Muted' : 'Mic on';
+      li.appendChild(mic);
+      list.appendChild(li);
+    });
+    $('lobby-mic').textContent = !VOICE.mic ? 'No microphone is available, so others cannot hear you. You can still hear them.'
+      : VOICE.muted ? 'You are muted.' : 'Your microphone is on. Everyone in the room can hear you.';
+    $('lobby-host').hidden = !host;
+    if (host) {
+      const people = NET.roster.length;
+      [3, 4, 5, 6].forEach(n => { $('lseats-' + n).disabled = n < people; });
+      if (NET.settings.players < Math.max(3, people)) NET.settings.players = Math.max(3, people);
+      $('lseats-' + NET.settings.players).checked = true;
+      $('lmode-' + NET.settings.mode).checked = true;
+      $('llevel-' + NET.settings.level).checked = true;
+      const bots = NET.settings.players - people;
+      $('lhint-seats').textContent = bots > 0 ? `${people} ${people === 1 ? 'person' : 'people'} and ${bots} computer ${bots === 1 ? 'player' : 'players'}.` : `${people} people, no computer players.`;
+      $('lhint-mode').textContent = HINTS.mode[NET.settings.mode];
+    }
+    const seated = gameStarted && NET.inGame && (host || NET.seat >= 0) && S && S.winner === null;
+    $('lobby-start').hidden = !host;
+    $('lobby-start').textContent = NET.inGame ? 'Start a new game' : 'Start game';
+    $('lobby-resume').hidden = !seated;
+    $('lobby-wait').textContent = host ? (people => people > 1 ? '' : 'Share the room code or invite link. Friends who join appear here.')(NET.roster.length)
+      : !NET.roster.length ? 'Joining the room…'
+      : NET.inGame && NET.seat < 0 ? 'A game is under way. You will be dealt in to the next one.'
+      : NET.inGame ? '' : 'Waiting for the host to start the game.';
+  }
+};
+
+/* --- Voice: an open microphone to everyone in the room, with a mute button --- */
+const Voice = {
+  async prepare() {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (AC && !VOICE.ctx) VOICE.ctx = new AC();
+    if (VOICE.ctx && VOICE.ctx.state === 'suspended') VOICE.ctx.resume().catch(() => {});
+    try {
+      VOICE.stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+      VOICE.mic = true;
+    } catch (err) {
+      // No microphone, or permission refused: join anyway with a silent line, so you can still hear everyone.
+      VOICE.mic = false;
+      VOICE.stream = VOICE.ctx && VOICE.ctx.createMediaStreamDestination ? VOICE.ctx.createMediaStreamDestination().stream : new MediaStream();
+    }
+    Voice.setMuted(VOICE.muted, true);
+    if (VOICE.mic) Voice.meter('me', VOICE.stream);
+    clearInterval(VOICE.loop);
+    VOICE.loop = setInterval(Voice.listen, 120);
+  },
+  // Calls each player who has not been called yet. Of each pair, the one whose id sorts first places the call.
+  sync() {
+    const me = Net.id();
+    if (!me || !VOICE.stream) return;
+    NET.roster.forEach(r => {
+      if (r.pid === me || VOICE.calls[r.pid] || me > r.pid) return;
+      const call = NET.peer.call(r.pid, VOICE.stream);
+      if (call) Voice.take(call);
+    });
+    Object.keys(VOICE.calls).forEach(pid => { if (!NET.roster.some(r => r.pid === pid)) Voice.hangUp(pid); });
+  },
+  take(call) {
+    const pid = call.peer;
+    if (VOICE.calls[pid] && VOICE.calls[pid] !== call) VOICE.calls[pid].close();
+    VOICE.calls[pid] = call;
+    call.on('stream', stream => Voice.hear(pid, stream));
+    call.on('close', () => { if (VOICE.calls[pid] === call) Voice.hangUp(pid); });
+    call.on('error', () => { if (VOICE.calls[pid] === call) Voice.hangUp(pid); });
+  },
+  hear(pid, stream) {
+    let el = VOICE.audio[pid];
+    if (!el) {
+      el = VOICE.audio[pid] = document.createElement('audio');
+      el.autoplay = true;
+      $('voices').appendChild(el);
+    }
+    el.srcObject = stream;
+    el.play().catch(() => {});
+    Voice.meter(pid, stream);
+  },
+  hangUp(pid) {
+    const call = VOICE.calls[pid];
+    delete VOICE.calls[pid];
+    if (call) call.close();
+    if (VOICE.audio[pid]) { VOICE.audio[pid].srcObject = null; VOICE.audio[pid].remove(); delete VOICE.audio[pid]; }
+    delete VOICE.meters[pid];
+    delete VOICE.talk[pid];
+  },
+  // Level meters, so a player's name lights up while they talk.
+  meter(key, stream) {
+    if (!VOICE.ctx || !stream.getAudioTracks().length) return;
+    try {
+      const analyser = VOICE.ctx.createAnalyser();
+      analyser.fftSize = 512;
+      VOICE.ctx.createMediaStreamSource(stream).connect(analyser);
+      VOICE.meters[key] = { analyser, data: new Float32Array(analyser.fftSize), hold: 0 };
+    } catch (err) { /* no meter for this voice */ }
+  },
+  listen() {
+    for (const key in VOICE.meters) {
+      const m = VOICE.meters[key];
+      m.analyser.getFloatTimeDomainData(m.data);
+      let sum = 0;
+      for (let i = 0; i < m.data.length; i++) sum += m.data[i] * m.data[i];
+      const loud = Math.sqrt(sum / m.data.length) > 0.025;
+      m.hold = loud ? 4 : Math.max(0, m.hold - 1);   // stays lit briefly between words
+      VOICE.talk[key] = m.hold > 0;
+    }
+    if (View && View.voiceMarks) View.voiceMarks();
+    document.querySelectorAll('#lobby-roster .mic').forEach(el => {
+      el.classList.toggle('talk', !!VOICE.talk[el.dataset.pid] && !el.classList.contains('off'));
+    });
+  },
+  setMuted(muted, quiet) {
+    VOICE.muted = muted;
+    if (VOICE.stream) VOICE.stream.getAudioTracks().forEach(t => { t.enabled = !muted; });
+    Voice.refreshButton();
+    if (quiet) return;
+    if (NET.mode === 'guest' && NET.host && NET.host.open) NET.host.send({ t: 'mute', muted: muted || !VOICE.mic });
+    if (NET.mode === 'host') {
+      const me = NET.roster.find(r => r.pid === Net.id());
+      if (me) me.muted = muted || !VOICE.mic;
+      Net.shareLobby();
+    }
+    Net.renderLobby();
+    if (View && View.voiceMarks) View.voiceMarks();
+  },
+  refreshButton() {
+    const b = $('mic-btn');
+    b.disabled = !VOICE.mic;
+    b.textContent = !VOICE.mic ? 'No mic' : VOICE.muted ? 'Unmute' : 'Mute';
+    b.setAttribute('aria-pressed', String(VOICE.muted));
+    b.classList.toggle('off', VOICE.muted || !VOICE.mic);
+  },
+  stop() {
+    Object.keys(VOICE.calls).forEach(Voice.hangUp);
+    if (VOICE.stream) VOICE.stream.getTracks().forEach(t => t.stop());
+    VOICE.stream = null;
+    VOICE.meters = {};
+    VOICE.talk = {};
+    clearInterval(VOICE.loop);
+  }
+};
+
+// Multiplayer menu
+if (ON_CLAUDE) {
+  $('menu-multi').disabled = true;
+  $('multi-note').textContent = 'Multiplayer and voice chat work when you play at heartcenter.org.';
+} else {
+  $('multi-note').hidden = true;
+}
+try { $('net-name').value = localStorage.getItem('threefold-name') || ''; } catch (e) { /* storage may be unavailable */ }
+$('menu-multi').addEventListener('click', () => { $('net-msg').textContent = ''; showMenu('net'); });
+$('net-back').addEventListener('click', () => showMenu('home'));
+$('net-host').addEventListener('click', () => Net.start(true));
+$('net-code').addEventListener('input', e => { e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5); });
+$('net-join-form').addEventListener('submit', e => {
+  e.preventDefault();
+  const code = $('net-code').value.trim().toUpperCase();
+  if (code.length !== 5) { $('net-msg').textContent = 'Room codes are five letters and numbers.'; $('net-code').focus(); return; }
+  Net.start(false, code);
+});
+$('lobby-copy').addEventListener('click', () => {
+  const done = () => { $('lobby-copy').textContent = 'Link copied'; setTimeout(() => { $('lobby-copy').textContent = 'Copy invite link'; }, 2000); };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(Net.link()).then(done, () => window.getSelection().selectAllChildren($('lobby-link')));
+  else window.getSelection().selectAllChildren($('lobby-link'));
+});
+$('lobby-start').addEventListener('click', startNew);
+$('lobby-resume').addEventListener('click', resumeGame);
+$('lobby-leave').addEventListener('click', () => { Net.leave(); showMenu('home'); });
+$('lobby-host').addEventListener('change', e => {
+  if (e.target.name === 'lseats') NET.settings.players = +e.target.value;
+  if (e.target.name === 'lmode') NET.settings.mode = e.target.value;
+  if (e.target.name === 'llevel') NET.settings.level = e.target.value;
+  Net.shareLobby();
+});
+$('mic-btn').addEventListener('click', () => Voice.setMuted(!VOICE.muted));
+window.addEventListener('pagehide', () => { if (NET.mode) Net.leave(); });
 
 $('moves').addEventListener('click', e => {
   const b = e.target.closest('[data-opt]');
@@ -1335,31 +1947,25 @@ function makeView() {
       }
     }
   }
-  // Little eyes: one seamless tile of small almond eyes with emerald irises.
-  function paintEyes(cv, seed, count) {
+  // Little triangles: one seamless tile of small glowing emerald triangles, mostly pointing up, a few nested.
+  function paintTriangles(cv, seed, count) {
     const g = cv.getContext('2d'), T = cv.width;
     let sd = seed;
     const rnd = () => { sd = (sd * 16807) % 2147483647; return sd / 2147483647; };
+    const tri = r => { g.beginPath(); for (let k = 0; k < 3; k++) { const a = -Math.PI / 2 + k * 2.0944; g.lineTo(Math.cos(a) * r, Math.sin(a) * r); } g.closePath(); };
     for (let i = 0; i < count; i++) {
-      const x = rnd() * T, y = rnd() * T, w = 30 + Math.pow(rnd(), 1.5) * 30, h = w * 0.5, tilt = (rnd() - 0.5) * 0.5, a = 0.65 + rnd() * 0.35;
+      const x = rnd() * T, y = rnd() * T, r = 9 + Math.pow(rnd(), 1.5) * 18, tilt = (rnd() < 0.8 ? 0 : Math.PI) + (rnd() - 0.5) * 0.35, a = 0.6 + rnd() * 0.4, nested = rnd() < 0.35;
       for (const dx of [-T, 0, T]) for (const dy of [-T, 0, T]) {
         const px = x + dx, py = y + dy;
-        if (px < -w || px > T + w || py < -w || py > T + w) continue;
+        if (px < -r * 2 || px > T + r * 2 || py < -r * 2 || py > T + r * 2) continue;
         g.save();
         g.translate(px, py); g.rotate(tilt);
         g.globalAlpha = a;
-        const almond = () => { g.beginPath(); g.moveTo(-w / 2, 0); g.quadraticCurveTo(0, -h * 0.95, w / 2, 0); g.quadraticCurveTo(0, h * 0.95, -w / 2, 0); };
-        g.shadowColor = '#43ff9c'; g.shadowBlur = w * 0.3;
-        almond(); g.fillStyle = '#f2fff7'; g.fill();
-        g.shadowColor = 'transparent';
-        g.save(); almond(); g.clip();
-        const iris = g.createRadialGradient(0, 0, h * 0.08, 0, 0, h * 0.44);
-        iris.addColorStop(0, '#a8ffcf'); iris.addColorStop(0.55, '#19b866'); iris.addColorStop(1, '#0a6b3a');
-        g.fillStyle = iris; g.beginPath(); g.arc(0, 0, h * 0.44, 0, 6.2832); g.fill();
-        g.fillStyle = '#04150c'; g.beginPath(); g.arc(0, 0, h * 0.18, 0, 6.2832); g.fill();
-        g.fillStyle = 'rgba(255,255,255,.9)'; g.beginPath(); g.arc(-h * 0.14, -h * 0.14, h * 0.07, 0, 6.2832); g.fill();
-        g.restore();
-        almond(); g.strokeStyle = '#7dffb9'; g.lineWidth = Math.max(1, w * 0.035); g.stroke();
+        g.lineJoin = 'round';
+        g.shadowColor = '#3dff8f'; g.shadowBlur = r * 0.9;
+        tri(r); g.fillStyle = 'rgba(61, 255, 143, .14)'; g.fill();
+        g.strokeStyle = '#b8ffd6'; g.lineWidth = Math.max(1.4, r * 0.13); g.stroke();
+        if (nested) { tri(r * 0.45); g.strokeStyle = '#7dffb9'; g.lineWidth = Math.max(1, r * 0.08); g.stroke(); }
         g.restore();
       }
     }
@@ -1388,8 +1994,8 @@ function makeView() {
     hearts: driftLayers(paintHearts, 919, 30, [{ repeat: 1.3, speed: [0.006, -0.02], opacity: 0.55 }, { repeat: 0.8, speed: [-0.009, -0.036], opacity: 0.95 }]),
     // Violet flames rising.
     flames: driftLayers(paintFlames, 331, 22, [{ repeat: 1.3, speed: [0.004, -0.032], opacity: 0.5 }, { repeat: 0.8, speed: [-0.006, -0.058], opacity: 0.9 }]),
-    // Emerald eyes drifting slowly sideways.
-    eyes: driftLayers(paintEyes, 577, 16, [{ repeat: 1.3, speed: [0.012, -0.006], opacity: 0.45 }, { repeat: 0.8, speed: [-0.016, -0.011], opacity: 0.85 }])
+    // Emerald triangles drifting slowly upward.
+    triangles: driftLayers(paintTriangles, 577, 20, [{ repeat: 1.3, speed: [0.006, -0.012], opacity: 0.45 }, { repeat: 0.8, speed: [-0.008, -0.022], opacity: 0.85 }])
   };
   // Midnight-blue clouds: soft seamless patches that drift across the black sky while their strength rises and falls,
   // so the panel moves between black and midnight blue instead of sitting at one flat colour.
@@ -1737,8 +2343,8 @@ function makeView() {
     const over = S.winner !== null;
     S.players.forEach((pl, p) => {
       const el = seatLabels[p].el;
-      el.className = 'seat' + (S.current === p && !over ? ' turn' : '');
-      el.textContent = pl.name;
+      el.className = 'seat' + (S.current === p && !over ? ' turn' : '') + seatVoiceClass(pl);
+      el.textContent = p === 0 && NET.mode ? `${pl.name} (you)` : pl.name;
       pl.trios.forEach(n => {
         const chip = document.createElement('span');
         chip.className = 'chip';
@@ -1975,6 +2581,15 @@ function makeView() {
       });
     },
     sync() { layout(); updateLabels(); updateSpin(); },
+    voiceMarks() {
+      if (!S) return;
+      seatLabels.forEach((l, p) => {
+        const pl = S.players[p];
+        if (!pl) return;
+        l.el.classList.toggle('talk', seatVoiceClass(pl).includes('talk'));
+        l.el.classList.toggle('muted', seatVoiceClass(pl).includes('muted'));
+      });
+    },
     repaint() { paintBack(); paintAllFaces(); },
     setHighlight(name) {
       highlight = HIGHLIGHTS[name];
@@ -2020,6 +2635,13 @@ function start(data) {
     S = newGame(SETTINGS.players, SETTINGS.mode, SETTINGS.level, Math.random);
     if (View) View.reset();
     showMenu('home');
+    // An invite link (…#join-ABCDE) opens straight onto the join screen with its code filled in.
+    const invite = /^#join-([A-Za-z0-9]{5})$/.exec(location.hash);
+    if (invite && !ON_CLAUDE) {
+      $('net-code').value = invite[1].toUpperCase();
+      showMenu('net');
+      $('net-msg').textContent = 'Enter your name and press Join.';
+    }
   }
 }
 window.claude?.hot?.snapshot?.(() => (gameStarted ? { state: S } : {}));
