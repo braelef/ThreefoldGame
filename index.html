@@ -160,6 +160,9 @@ select, .btn { font: inherit; color: var(--ink); background: var(--panel); borde
 .m-btn.primary { background: var(--m-gold); border-color: var(--m-gold); color: #1c1505; }
 .m-btn.primary:hover { background: #efd187; }
 .m-btn:disabled { cursor: not-allowed; color: rgba(251, 246, 233, .42); border-style: dashed; border-color: rgba(226, 192, 108, .25); }
+.games-link { display: block; margin: 6px auto 0; padding: 4px 8px; text-align: center; font-size: .88rem; letter-spacing: .04em; color: var(--m-gold); text-decoration: none; opacity: .85; }
+.games-link:hover, .games-link:focus-visible { opacity: 1; text-decoration: underline; }
+#endgame > .games-link { margin-top: 14px; }
 .menu-note { margin: -4px 0 0; font-size: .82rem; text-align: center; color: var(--m-soft); }
 #menu fieldset { margin: 0; padding: 0; border: 0; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 #menu legend { padding: 0; margin-bottom: 6px; font-size: .78rem; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--m-gold); }
@@ -312,6 +315,7 @@ summary { cursor: pointer; color: var(--ink); font-weight: 600; }
         <button type="button" class="m-btn primary" id="end-new">New game</button>
         <button type="button" class="m-btn" id="end-menu">Menu</button>
       </div>
+      <a class="games-link" href="https://www.heartscenter.org/Learn/ChildrenandYouth/Games/tabid/1459/Default.aspx" target="_top">&larr; More games</a>
       <p class="menu-note" id="end-note" hidden>Waiting for the host to start the next game.</p>
     </div>
     <div id="menu" role="dialog" aria-modal="true" aria-labelledby="menu-title">
@@ -325,6 +329,7 @@ summary { cursor: pointer; color: var(--ink); font-weight: 600; }
             <button type="button" class="m-btn" id="menu-multi" aria-describedby="multi-note">Multiplayer</button>
             <p class="menu-note" id="multi-note"></p>
             <button type="button" class="m-btn menu-quiet" id="menu-rules-btn">Rules</button>
+            <a class="games-link" href="https://www.heartscenter.org/Learn/ChildrenandYouth/Games/tabid/1459/Default.aspx" target="_top">&larr; More games</a>
           </div>
         </section>
         <section id="menu-net" hidden>
