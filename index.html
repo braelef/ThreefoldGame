@@ -5,15 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Threefold</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&display=swap">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600;700&display=swap">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Marcellus&display=swap">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Philosopher:wght@400;700&display=swap">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&display=swap">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Forum&display=swap">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@300;400;600;700&display=swap">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;600;700&display=swap">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Raleway:wght@300;400;600;700&display=swap">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poiret+One&display=swap">
 <style>
 /* Layout idea: one screen. Controls and status on top, a 3D card table filling the rest.
    Deliberately neutral: the look is a placeholder until the real art direction arrives. */
@@ -196,7 +188,7 @@ select, .btn { font: inherit; color: var(--ink); background: var(--panel); borde
 #lobby-roster .mic.off { border-color: rgba(255, 255, 255, .2); color: var(--m-soft); }
 #lobby-roster .mic.talk { background: rgba(143, 208, 255, .25); box-shadow: 0 0 10px rgba(143, 208, 255, .7); }
 .menu-card #lobby-wait:empty, .menu-card #lobby-mic:empty { display: none; }
-#mic-btn.off { color: var(--muted); }
+#mic-btn.off, #sound-btn.off { color: var(--muted); }
 #toast { position: absolute; left: 50%; bottom: 14px; z-index: 7; max-width: min(90%, 460px); transform: translate(-50%, 8px); opacity: 0; pointer-events: none;
   padding: 8px 14px 6px; border-radius: 999px; background: rgba(10, 13, 26, .88); color: #fbf6e9; border: 1px solid rgba(226, 192, 108, .45);
   font-size: .9rem; text-align: center; transition: opacity .25s, transform .25s; }
@@ -212,6 +204,8 @@ select, .btn { font: inherit; color: var(--ink); background: var(--panel); borde
 #menu-rules h3 { margin: 16px 0 2px; font-family: "Cinzel", Georgia, serif; font-weight: 600; font-size: 1.05rem; letter-spacing: .04em; color: var(--m-gold); }
 #menu-rules h3:first-child { margin-top: 0; }
 #menu-rules p { margin: 0 0 8px; max-width: 62ch; }
+#menu-rules a { color: var(--m-gold); text-underline-offset: 3px; }
+#menu-rules a:hover { color: #efd187; }
 #menu-rules table { border-collapse: collapse; margin: 2px 0 10px; font-variant-numeric: tabular-nums; }
 #menu-rules th, #menu-rules td { padding: 5px 14px 4px 0; text-align: left; border-bottom: 1px solid rgba(226, 192, 108, .2); }
 #menu-rules th { font-size: .78rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--m-soft); }
@@ -258,9 +252,7 @@ summary { cursor: pointer; color: var(--ink); font-weight: 600; }
   <header>
     <h1>Threefold</h1>
     <div class="controls">
-      <label for="opt-font">Card font
-        <select id="opt-font"></select>
-      </label>
+      <button class="btn quiet" id="sound-btn" type="button" aria-pressed="true">Sound on</button>
       <button class="btn quiet" id="mic-btn" type="button" aria-pressed="false" hidden>Mute</button>
       <button class="btn quiet" id="open-menu" type="button">Menu</button>
       <button class="btn" id="new-game" type="button">New game</button>
@@ -431,6 +423,12 @@ summary { cursor: pointer; color: var(--ink); font-weight: 600; }
 
             <h3>The cards and their images</h3>
             <ul id="rules-cards"></ul>
+
+            <h3>Sound</h3>
+            <p>Cards make a soft sound as they turn, a rising bell marks each match while a trio is building, and a completed trio rings out with a clap of thunder behind it. The Sound button at the top of the screen turns the effects off and on, separately from the microphone in online games.</p>
+
+            <h3>Credits</h3>
+            <p>Threefold is played by the rules of Trio, a card game designed by Kaya Miyano that began life in Japan as nana and is published in English by Cocktail Games. If you enjoy Threefold, the original is a lovely game to play around a real table, and you can find it at <a href="https://www.cocktailgames.com/en/game/trio/" target="_blank" rel="noopener">Cocktail Games</a> or ask for it at your local game shop. Threefold is a fan-made tribute and is not affiliated with or endorsed by Kaya Miyano or Cocktail Games.</p>
           </div>
           <button type="button" class="m-btn" id="rules-back">Back</button>
         </section>
@@ -560,16 +558,14 @@ const CARD_INFO = {
   11: '',   // Victory
   12: ''    // Threefold Flame
 };
-// Fonts to try on the cards. The first is the default; the picker in the page switches between them.
-// Text is drawn in the lightest weight each font has.
-const CARD_FONTS = ['Josefin Sans', 'Raleway', 'Quicksand', 'Poiret One', 'Cormorant Garamond', 'Cinzel', 'Marcellus', 'Forum', 'Philosopher', 'Playfair Display', 'Georgia'];
 // weight: lettering on the plain numbered cards. artWeight: lettering on the starry art cards (400 normal, 600 semi-bold, 700 bold).
 const CARD_TEXT = { weight: 300, artWeight: 600, light: '#f4f7ff' };
 // Night sky behind an emblem: top and bottom colours, and how strongly the card's own colour hazes the middle (0 to 1).
 // cloud: the colour (as "red, green, blue") that drifts across the dark and swells and fades; cloudPeriod: seconds for one swell.
 // starTint: a colour wash over the stars. A card can override any of these with its own sky.
 const CARD_SKY = { top: '#000006', bottom: '#01030d', haze: 0.2, cloud: '25, 36, 122', cloudPeriod: 14, starTint: '#ffffff' };
-let CARD_FONT = CARD_FONTS[0];
+// The typeface for the numbers and names printed on the cards (loaded from Google Fonts at the top of the page).
+const CARD_FONT = 'Josefin Sans';
 const CARD_BACK = { color: '#2b3350', line: 'rgba(255,255,255,.16)', image: null };
 // Room and table. Colours are CSS strings for painted wood, hex numbers for plain surfaces.
 // Ways to mark the cards you can play. HIGHLIGHT below names the one in use.
@@ -844,6 +840,140 @@ function hideEnd() {
   $('endgame').classList.remove('show');
 }
 
+/* ---------- Sound effects ---------- */
+// Every sound is made on the spot with the browser's audio engine, so there are no sound files to load.
+// volume: 0 to 1. The Sound button in the top bar turns them all off and on, and is remembered in this browser.
+const SOUND = { on: true, volume: 0.55 };
+/*SOUND-START*/
+const Sfx = {
+  ctx: null, out: null, noise: null,
+  // Browsers only allow sound after the first click or key press, so the engine starts then.
+  start() {
+    if (this.ctx) { if (this.ctx.state === 'suspended') this.ctx.resume().catch(() => {}); return; }
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    this.attach(new AC());
+  },
+  attach(ctx) {
+    this.ctx = ctx;
+    const squash = ctx.createDynamicsCompressor();   // keeps several sounds at once from getting harsh
+    squash.threshold.value = -18; squash.ratio.value = 4;
+    this.out = ctx.createGain();
+    this.out.gain.value = SOUND.on ? SOUND.volume : 0;
+    this.out.connect(squash).connect(ctx.destination);
+    const len = ctx.sampleRate * 2, buf = ctx.createBuffer(1, len, ctx.sampleRate), d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+    this.noise = buf;
+  },
+  setOn(on) {
+    SOUND.on = on;
+    if (this.out) this.out.gain.setTargetAtTime(on ? SOUND.volume : 0, this.ctx.currentTime, 0.02);
+  },
+  ready() { return this.ctx && this.ctx.state !== 'closed' && SOUND.on; },
+  // A burst of filtered noise: paper, air, rumble.
+  hiss({ at = 0, dur = 0.1, type = 'bandpass', freq = 2500, to = null, q = 1, gain = 0.3, attack = 0.004 }) {
+    const c = this.ctx, t = c.currentTime + at;
+    const src = c.createBufferSource(); src.buffer = this.noise;
+    src.playbackRate.value = 0.9 + Math.random() * 0.2;
+    const f = c.createBiquadFilter(); f.type = type; f.Q.value = q;
+    f.frequency.setValueAtTime(freq, t);
+    if (to) f.frequency.exponentialRampToValueAtTime(to, t + dur);
+    const g = c.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(gain, t + attack);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    src.connect(f).connect(g).connect(this.out);
+    src.start(t, Math.random()); src.stop(t + dur + 0.05);
+  },
+  // A soft bell: a sine with a few quieter overtones, struck and left to ring.
+  bell({ at = 0, freq = 660, dur = 1.2, gain = 0.18, bright = 1 }) {
+    const c = this.ctx, t = c.currentTime + at;
+    [[1, 1], [2.01, 0.35 * bright], [3.02, 0.14 * bright], [4.17, 0.06 * bright]].forEach(([mult, level]) => {
+      const o = c.createOscillator(), g = c.createGain();
+      o.type = 'sine'; o.frequency.value = freq * mult;
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(gain * level, t + 0.008);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur / mult ** 0.5);
+      o.connect(g).connect(this.out);
+      o.start(t); o.stop(t + dur + 0.1);
+    });
+  },
+  // A gentle tone that glides, for misses and losses.
+  glide({ at = 0, from = 330, to = 220, dur = 0.35, gain = 0.12, type = 'triangle' }) {
+    const c = this.ctx, t = c.currentTime + at;
+    const o = c.createOscillator(), g = c.createGain(), f = c.createBiquadFilter();
+    o.type = type; o.frequency.setValueAtTime(from, t); o.frequency.exponentialRampToValueAtTime(to, t + dur);
+    f.type = 'lowpass'; f.frequency.value = 1400;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(gain, t + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(f).connect(g).connect(this.out);
+    o.start(t); o.stop(t + dur + 0.05);
+  },
+  // The sounds the game uses.
+  flip(at = 0, soft = 1) {
+    this.hiss({ at, dur: 0.08, freq: 2600 + Math.random() * 900, q: 0.8, gain: 0.55 * soft });
+    this.hiss({ at: at + 0.035, dur: 0.05, type: 'highpass', freq: 5000, gain: 0.18 * soft });
+  },
+  deal() { for (let i = 0; i < 9; i++) this.flip(i * 0.05 + Math.random() * 0.015, 0.45); },
+  match(count) { this.bell({ freq: [523.25, 659.25, 783.99][Math.min(2, count - 1)] * 1.5, dur: 1, gain: 0.14 }); },
+  miss() { this.glide({ from: 392, to: 262, dur: 0.32 }); this.glide({ at: 0.14, from: 294, to: 196, dur: 0.42, gain: 0.1 }); },
+  flipBack(count) { for (let i = 0; i < count; i++) this.flip(i * 0.06, 0.5); },
+  trio() {
+    [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => this.bell({ at: i * 0.07, freq: f, dur: 2.2, gain: 0.13 }));
+    this.hiss({ at: 0.05, dur: 1.4, type: 'highpass', freq: 7000, to: 11000, gain: 0.05, attack: 0.3 });   // shimmer
+  },
+  thunder(at = 0) {
+    this.hiss({ at, dur: 0.2, type: 'highpass', freq: 1500, gain: 0.6, attack: 0.002 });                   // the crack
+    this.hiss({ at: at + 0.02, dur: 1.9, type: 'lowpass', freq: 1400, to: 90, q: 0.5, gain: 0.9, attack: 0.03 });   // the rumble
+    this.hiss({ at: at + 0.35, dur: 1.4, type: 'lowpass', freq: 500, to: 70, q: 0.5, gain: 0.3, attack: 0.1 });
+  },
+  collect() { this.hiss({ dur: 0.45, freq: 600, to: 2600, q: 1.4, gain: 0.3, attack: 0.12 }); },
+  yourTurn() { this.bell({ freq: 880, dur: 0.9, gain: 0.07, bright: 0.5 }); },
+  win() {
+    [523.25, 659.25, 783.99, 1046.5, 1318.5].forEach((f, i) => this.bell({ at: 1.2 + i * 0.16, freq: f, dur: 2.6, gain: 0.13 }));
+    this.hiss({ at: 1.2, dur: 2.4, type: 'highpass', freq: 6000, to: 12000, gain: 0.05, attack: 0.6 });
+  },
+  lose() { this.glide({ at: 1.2, from: 440, to: 392, dur: 0.6, gain: 0.1 }); this.glide({ at: 1.65, from: 349, to: 294, dur: 0.9, gain: 0.09 }); }
+};
+/*SOUND-END*/
+// Sounds follow changes in the table, so a guest in an online game hears the same moments as the host.
+let heard = null;
+function listenForSounds() {
+  if (!Sfx.ready() || !gameStarted || !S) { heard = S ? { gid: S.gid, turn: S.turn, rev: S.revealed.length, pending: S.pending, winner: S.winner, current: S.current } : null; return; }
+  const now = { gid: S.gid, turn: S.turn, rev: S.revealed.length, pending: S.pending, winner: S.winner, current: S.current };
+  const was = heard;
+  heard = now;
+  if (!was || was.gid !== now.gid) { Sfx.deal(); return; }
+  if (now.turn !== was.turn) {
+    if (was.pending === 'miss') Sfx.flipBack(was.rev);
+    if (was.pending === 'trio') Sfx.collect();
+    if (now.winner === null && now.current === 0 && S.players[0].human) Sfx.yourTurn();
+  }
+  if (now.rev > was.rev && now.turn === was.turn) {
+    Sfx.flip();
+    if (now.pending === 'miss') Sfx.miss();
+    else if (now.pending === 'trio') { Sfx.trio(); if (now.current === 0) Sfx.thunder(0.3); }   // the lightning strikes 0.3 seconds in
+    else if (now.rev >= 2) Sfx.match(now.rev);
+  }
+  if (now.winner !== null && was.winner === null) { if (now.winner === 0) Sfx.win(); else Sfx.lose(); }
+}
+function refreshSoundButton() {
+  const b = $('sound-btn');
+  b.textContent = SOUND.on ? 'Sound on' : 'Sound off';
+  b.setAttribute('aria-pressed', String(SOUND.on));
+  b.classList.toggle('off', !SOUND.on);
+}
+try { const saved = localStorage.getItem('threefold-sound'); if (saved !== null) SOUND.on = saved === 'on'; } catch (e) { /* storage may be unavailable */ }
+refreshSoundButton();
+$('sound-btn').addEventListener('click', () => {
+  Sfx.start();
+  Sfx.setOn(!SOUND.on);
+  try { localStorage.setItem('threefold-sound', SOUND.on ? 'on' : 'off'); } catch (e) { /* storage may be unavailable */ }
+  refreshSoundButton();
+});
+['pointerdown', 'keydown'].forEach(type => window.addEventListener(type, () => Sfx.start(), { passive: true }));
+
 /* ---------- Trio burst ---------- */
 // A jagged line from a to b: split each segment at its middle and knock the middle sideways, several times over.
 function jagged(a, b, sway, rounds) {
@@ -992,6 +1122,7 @@ function render() {
   });
   $('new-game').disabled = NET.mode === 'guest';
   renderTurnBar();
+  listenForSounds();
   if (View) View.sync();
 }
 
@@ -1606,22 +1737,13 @@ $('moves').addEventListener('click', e => {
 });
 $('new-game').addEventListener('click', startNew);
 
-// Card font picker: remembers your choice in this browser and repaints the cards once the font has loaded.
-function useFont(name) {
-  CARD_FONT = name;
-  try { localStorage.setItem('threefold-card-font', name); } catch (e) { /* storage may be unavailable */ }
-  const repaint = () => { if (View && CARD_FONT === name) View.repaint(); };
-  repaint();
+// The cards are painted before the web font may have arrived, so paint them again once it has.
+function repaintWhenFontsLoad() {
+  const repaint = () => { if (View) View.repaint(); };
   if (document.fonts && document.fonts.load) {
-    Promise.all([300, 400, 600].map(w => document.fonts.load(`${w} 40px "${name}"`))).then(repaint, repaint);
+    Promise.all([300, 400, 600].map(w => document.fonts.load(`${w} 40px "${CARD_FONT}"`))).then(repaint, repaint);
   }
 }
-CARD_FONTS.forEach(name => {
-  const o = document.createElement('option');
-  o.value = o.textContent = name;
-  $('opt-font').appendChild(o);
-});
-$('opt-font').addEventListener('change', e => useFont(e.target.value));
 
 
 /* ---------- 3D table ---------- */
@@ -3083,11 +3205,7 @@ function start(data) {
     $('moves').classList.add('open');
     console.error(err);
   }
-  let savedFont = null;
-  try { savedFont = localStorage.getItem('threefold-card-font'); } catch (e) { /* storage may be unavailable */ }
-  if (!CARD_FONTS.includes(savedFont)) savedFont = CARD_FONTS[0];
-  $('opt-font').value = savedFont;
-  useFont(savedFont);
+  repaintWhenFontsLoad();
   loadSettings();
   if (data && data.state && data.state.players) {
     // Picking up a game that was already under way. Games from before the difficulty names changed are translated.
